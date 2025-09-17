@@ -122,14 +122,14 @@
     // 1. Se o utilizador não está logado e está numa página protegida
     if (!session && protectedPages.includes(currentPage)) {
       // Guarda a página atual para redirecionar de volta após o login
-      const redirectTo = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.replace(`login.html?next=${redirectTo}`);
+      const redirectTo = encodeURIComponent(currentPage + window.location.search + window.location.hash);
+      window.location.href = `login.html?next=${redirectTo}`;
       return; // Pára a execução para evitar que o resto do script da página corra
     }
  
     // 2. Se o utilizador está logado e está numa página de login/registo
     if (session && publicOnlyPages.includes(currentPage)) {
-      window.location.replace('perfil.html');
+      window.location.href = 'perfil.html';
       return; // Pára a execução
     }
 
@@ -139,7 +139,7 @@
     supabase.auth.onAuthStateChange(async (_event, session) => {
       await updateAuthUI(session);
       if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
-        window.location.replace('index.html');
+        window.location.href = 'index.html';
       }
     });
   }
