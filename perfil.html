@@ -188,6 +188,12 @@
     /* ===== Responsividade ===== */
     @media (max-width:720px){
       .profile-header{ grid-template-columns:1fr; text-align:center; gap:.9rem; padding: 1rem; }
+      .form-label {
+        font-size: .9rem;
+        font-weight: 600;
+        color: #1f3b22;
+        margin: .2rem 0 .35rem;
+      }
       .profile-actions{
         flex-direction: column;
         align-items: center;
@@ -325,7 +331,7 @@
           </div>
 
           <div class="form-group">
-            <label for="location-map">Localização da Habitação (para alertas)</label>
+            <p class="form-label">Localização da Habitação (para alertas)</p>
             <p class="hint">Arraste o marcador para a sua localização exata. Isto é usado para o notificar sobre incêndios na sua área.</p>
             <div class="form-actions" style="margin-bottom: .6rem; justify-content: flex-start;">
               <button type="button" id="use-my-location" class="btn secondary">Usar a minha localização</button>
@@ -459,6 +465,20 @@
       let myReportsChart = null;
       let initialProfileData = {}; // To store the initial profile data
  
+      // Função centralizada para mudar a vista do perfil
+      function switchProfileView(mode) {
+        const modes = {
+          view: viewMode,
+          edit: editMode,
+          password: changePassMode,
+          delete: deleteAccountMode
+        };
+        // Esconde todos os painéis
+        Object.values(modes).forEach(el => el.style.display = 'none');
+        // Mostra apenas o painel pretendido
+        if (modes[mode]) modes[mode].style.display = 'block';
+      }
+
       // Reports state
       let currentReportPage = 0;
       const reportsPerPage = 5;
@@ -760,6 +780,7 @@
           deleteAccountMode.style.display = 'none';
           changePassMode.style.display = 'none';
           editMode.style.display = 'block';
+          switchProfileView('edit');
           updateMessage.style.display = 'none';
  
           // Initialize map if it's the first time, or just update its view
@@ -779,6 +800,7 @@
           deleteAccountMode.style.display = 'none';
           changePassMode.style.display = 'none';
           viewMode.style.display = 'block';
+          switchProfileView('view');
 
           // Restore coordinates to their initial state before editing
           const initialCoords = parseGeogString(initialProfileData?.geog);
@@ -821,6 +843,7 @@
           editMode.style.display = 'none';
           deleteAccountMode.style.display = 'none';
           changePassMode.style.display = 'block';
+          switchProfileView('password');
           passUpdateMessage.style.display = 'none';
           newPasswordInput.value = '';
           confirmNewPasswordInput.value = '';
@@ -830,6 +853,7 @@
           changePassMode.style.display = 'none';
           deleteAccountMode.style.display = 'none';
           viewMode.style.display = 'block';
+          switchProfileView('view');
       });
 
       changePassForm.addEventListener('submit', async (e) => {
@@ -880,6 +904,7 @@
           editMode.style.display = 'none';
           changePassMode.style.display = 'none';
           deleteAccountMode.style.display = 'block';
+          switchProfileView('delete');
           deleteAccountMessage.style.display = 'none';
           deleteConfirmInput.value = '';
           confirmDeleteBtn.disabled = true;
@@ -888,14 +913,17 @@
       cancelDeleteBtn.addEventListener('click', () => {
           deleteAccountMode.style.display = 'none';
           viewMode.style.display = 'block';
+          switchProfileView('view');
       });
 
       deleteConfirmInput.addEventListener('input', () => {
           confirmDeleteBtn.disabled = (deleteConfirmInput.value !== 'APAGAR');
+          confirmDeleteBtn.disabled = (deleteConfirmInput.value.trim().toUpperCase() !== 'APAGAR');
       });
 
       confirmDeleteBtn.addEventListener('click', async () => {
           if (deleteConfirmInput.value !== 'APAGAR') return;
+          if (deleteConfirmInput.value.trim().toUpperCase() !== 'APAGAR') return;
 
           confirmDeleteBtn.disabled = true;
           confirmDeleteBtn.textContent = 'A apagar...';
@@ -968,6 +996,7 @@
             populateUI(updatedProfile);
             editMode.style.display = 'none';
             viewMode.style.display = 'block';
+            switchProfileView('view');
 
             updateMessage.textContent = 'Perfil atualizado com sucesso!';
             updateMessage.className = 'msg ok';
