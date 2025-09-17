@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     const emailPromises = (nearbyUsers as Profile[]).map(user => {
         // Constrói um link dinâmico para o mapa, usando uma variável de ambiente.
         // Isto permite mudar facilmente de 'github.io' para um domínio personalizado.
-        const siteBaseUrl = Deno.env.get('SITE_BASE_URL') || 'https://rubensousa100.github.io/Aldeias-Seguras-Site';
+        const siteBaseUrl = Deno.env.get('SITE_BASE_URL') || 'https://rubensousa100.github.io/Aldeias-Seguras';
         const mapUrl = `${siteBaseUrl}/Incendio.html?lat=${newRelato.lat}&lng=${newRelato.lng}&zoom=13#ffr-map-collab`;
 
         // Construir o corpo do e-mail em HTML
