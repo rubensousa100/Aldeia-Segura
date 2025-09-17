@@ -220,7 +220,7 @@
         <button type="submit" class="btn">Entrar</button>
 
         <p class="muted">Ainda não tem conta?
-          <a href="registro.html">Registar-se</a>
+          <a href="Registro.html">Registar-se</a>
         </p>
       </form>
     </div>
@@ -298,9 +298,7 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Entrar';
       } else {
-          // Sucesso! Recarrega a página.
-          // O script main.js irá detetar a nova sessão e fazer o redirecionamento correto.
-          window.location.reload();
+        window.location.href = 'perfil.html'; // Redireciona em caso de sucesso
       }
     });
 
