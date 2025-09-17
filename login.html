@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Login — Aldeias Seguras Pessoas Seguras</title>
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
-  <!-- Base para links relativos funcionarem no GitHub Pages -->
-  <base href="/Aldeia-Segura/">
   <style>
     :root{
       --green:#2e7d32;
@@ -300,7 +298,9 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Entrar';
       } else {
-        window.location.href = 'perfil.html'; // Redireciona em caso de sucesso
+          // Sucesso! Recarrega a página.
+          // O script main.js irá detetar a nova sessão e fazer o redirecionamento correto.
+          window.location.reload();
       }
     });
 
