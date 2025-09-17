@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatar Incêndio | Aldeia Segura Pessoas Seguras</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="main.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+
+  <style>
+    /* impedir qualquer scroll lateral */
+    html,body{max-width:100%; overflow-x:hidden}
+
+    /* Estilos específicos da página */
+    :root {
+      --green: #2e7d32;
+      --line: #e7e7e7;
+      --shadow: 0 2px 6px rgba(0, 0, 0, .08);
+      --text: #333;
+    }
+
+    /* ===== Estilos da página de relato ===== */
+    .ffr-wrap{max-width:1100px;margin:1rem auto 2rem;padding:0 1rem}
+    .ffr-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:1.2rem;overflow:hidden}
+
+    /* Wizard — desktop em grelha */
+    .ffr-wizard{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin:.4rem 0 1.2rem}
+    .ffr-step{display:flex;align-items:center;gap:.6rem;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;min-height:48px;min-width:0}
+    .ffr-step .ffr-dot{width:28px;height:28px;border-radius:50%;background:#c8e6c9;color:#1b5e20;display:grid;place-items:center;font-weight:700}
+    .ffr-step h2{margin:0;font-size:1rem;color:var(--green);min-width:0}
+    .ffr-step.off{opacity:.55}
+    .ffr-step.off .ffr-dot{background:#eceff1;color:#90a4ae}
+
+    .ffr-muted{color:#607d8b;font-size:.96rem;word-break:break-word}
+    .ffr-section{display:none}.ffr-section.active{display:block}
+    .ffr-row{display:grid;grid-template-columns:1.15fr .85fr;gap:1.2rem}
+    @media (max-width:980px){.ffr-row{grid-template-columns:1fr}}
+
+    .ffr-label{font-weight:600;font-size:1rem;margin-bottom:.35rem;display:block}
+    .ffr-input,.ffr-select,.ffr-textarea{width:100%;padding:.78rem .9rem;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
+    .ffr-textarea{min-height:110px;resize:vertical}
+    .ffr-group{margin:1rem 0}.ffr-group:first-child{margin-top:.2rem}
+    .ffr-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+    .ffr-btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--green);color:#fff;border:0;border-radius:12px;padding:.7rem 1rem;font-weight:700;cursor:pointer}
+    .ffr-btn.secondary{background:#eceff1;color:#263238}.ffr-btn:disabled{opacity:.6;cursor:not-allowed}
+
+    .ffr-alert{background:#fff3cd;color:#8a6d3b;border:1px solid #ffeeba;border-left:6px solid #ffb300;border-radius:12px;padding:.9rem 1rem;margin:.6rem 0 1.2rem}
+
+    /* Mapa */
+    #ffr-map-report{height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-top:.6rem}
+    .leaflet-container{font:inherit}
+    .leaflet-control-scale{background:#fff;border-radius:8px;border:1px solid var(--line);padding:.15rem .35rem;box-shadow:var(--shadow)}
+
+    /* Blocos */
+    .ffr-block{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:1rem 1.1rem}
+    .ffr-block + .ffr-block{margin-top:1.2rem}
+    .ffr-block .ffr-group{margin:.85rem 0}
+    .ffr-block-head{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;margin-bottom:.6rem}
+    .ffr-block h4{margin:.1rem 0;color:var(--green)}
+    .ffr-sub{margin:0;color:#78909c;font-size:.95rem}
+
+    .ffr-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+    .ffr-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+    @media (max-width:980px){.ffr-grid-2,.ffr-grid-3{grid-template-columns:1fr}}
+
+    .ffr-chips{display:flex;flex-wrap:wrap;gap:.6rem}
+    .ffr-chip{display:inline-flex;align-items:center;gap:.5rem;background:#fff;border:1px solid var(--line);border-radius:999px;padding:.55rem .8rem;transition:.15s;max-width:100%}
+    .ffr-chip input{accent-color:var(--green)} .ffr-chip:hover{border-color:#cfd8dc}
+    .ffr-chip:has(input:checked){background:#eaf7ee;border-color:#bfe5c6;box-shadow:inset 0 0 0 1px #c8e6c9}
+
+    .ffr-toast{display:none;margin:.8rem 0;padding:.9rem 1rem;border-radius:12px}
+    .ffr-toast.show{display:block}
+    .ffr-toast.err{background:#fdecea;color:#b71c1c;border:1px solid #f5c6cb}
+    .ffr-toast.ok.show {display: flex;}
+    .ffr-toast.ok{background:#e7f6ec;color:#1b5e20;border:1px solid #c8e6c9}
+
+    .leaflet-bottom.leaflet-right .ffr-legend{font-size:12px;line-height:1.15;padding:.6rem .7rem;border-radius:10px;max-width:240px}
+    .ffr-legend .badge{display:inline-block;padding:1px 6px;border-radius:6px;font-weight:600;font-size:11px;color:#fff}
+    .ffr-legend .muted{font-size:11px;opacity:.8}
+    .ffr-legend .body{display:none}.ffr-legend.open .body{display:block}
+    .ffr-legend .header{cursor:pointer;user-select:none}
+
+    .ffr-panel{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .ffr-select-sm,.ffr-btn-sm{font:inherit;padding:.5rem .65rem;border-radius:10px;border:1px solid var(--line);background:#fff}
+    .ffr-btn-sm{background:var(--green);color:#fff;border:0}
+    .ffr-btn-sm.confirmed{background:#e8f5e9;color:var(--green);border:1px solid #c8e6c9}
+    .ffr-badge{font-size:12px;padding:.15rem .5rem;border-radius:8px;background:#eceff1;color:#455a64;display:none}
+    .ffr-badge.on{display:inline-block}
+
+    /* Estilos para o novo painel de controlo do mapa colaborativo */
+    .ffr-panel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem .8rem;
+        background: #fcfdfc;
+        border: 1px solid var(--line);
+        padding: .8rem 1rem;
+        border-radius: 12px;
+    }
+    .ffr-panel-group {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+    .legend-collab { padding: 6px 10px; font: 13px/1.5 'Roboto', Arial, sans-serif; background: rgba(255,255,255,0.85); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; backdrop-filter: blur(3px); }
+    .legend-collab h4 { margin: 0 0 5px 0; color: #333; font-size: 14px; }
+    .legend-collab div { display: flex; align-items: center; }
+    .legend-collab i { width: 14px; height: 14px; float: left; margin-right: 6px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
+
+    /* Hero da página */
+    .ffr-hero{
+      background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+      padding:1.1rem 1.2rem;margin:.6rem auto 1rem;text-align:center;max-width:900px
+    }
+    .ffr-hero h1{margin:.1rem 0 .25rem;color:var(--green);font-size:1.5rem;line-height:1.25}
+    .ffr-hero p{margin:.2rem auto 0;color:#607d8b;font-size:1rem;max-width:65ch}
+
+    /* ====== Ajustes MOBILE ====== */
+    @media (max-width:760px){
+      .ffr-wrap{padding:0 .85rem}
+      .ffr-card{padding:1rem}
+      #ffr-map-report{height:320px}
+
+      /* wizard empilhado em mobile para melhor leitura */
+      .ffr-wizard{
+        display:grid;
+        grid-template-columns:1fr; /* Empilha os passos na vertical */
+        gap:.6rem;
+        overflow:visible; /* sem scroll horizontal */
+      }
+      .ffr-step{min-width:auto}
+
+      .ffr-actions .ffr-btn{flex:1} /* Botões de ação partilham o espaço */
+      .leaflet-bottom.leaflet-right .ffr-legend{max-width:75vw}
+    }
+
+    @media (max-width:400px){
+      #ffr-map-report{height:300px}
+    }
+    /* --- Ajustes finais de layout (faixa + rodapé + mapa) --- */
+
+/* 1) Faixa de emergência alinhada ao content width e centrada */
+.emergency{
+  max-width: 1100px;          /* igual ao .ffr-wrap */
+  margin: 1.5rem auto 2.25rem;/* espaço antes/depois consistente */
+  width: calc(100% - 2rem);   /* respiro lateral em ecrãs pequenos */
+}
+
+/* 2) Espaços coerentes entre blocos finais */
+.ffr-card:last-of-type{ margin-bottom: 1.25rem; }
+#ffr-map-report{ margin-bottom: .75rem; }
+
+/* 3) Controlos do Leaflet com ligeiro afastamento das bordas */
+.leaflet-control{ margin: 6px; } /* afasta escala/legenda das bordas arredondadas */
+
+/* 4) Em mobile, mantém tudo limpo e sem “arrasto” lateral no fim */
+@media (max-width: 760px){
+  .emergency{ width: calc(100% - 1.7rem); margin: 1.25rem auto 2rem; }
+}
+
+/* Faixa full-bleed no desktop; com respiro no mobile */
+.emergency{
+  background:#e1f8e4;
+  border:2px solid var(--green-2);
+  border-radius:10px;
+  padding:1rem 1.25rem;
+  text-align:center;
+  display:flex; flex-direction:column; align-items:center;
+
+  /* truque para esticar até às bordas da janela mesmo dentro do container */
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  width: 100vw;           /* ocupa a largura toda da viewport */
+  max-width: 100vw;
+}
+
+.emergency h3{ color:#c0392b; font-size:1.2rem; margin:.15rem 0 .35rem; }
+.emergency p{ font-size:.95rem; margin:0; }
+
+/* Mobile: volta a dar “respiro” lateral para não colar às bordas */
+@media (max-width: 900px){
+  .emergency{
+    width:auto; max-width:none;
+    margin-left: 12px;   /* ou 8px, a gosto */
+    margin-right: 12px;
+  }
+}
+/* --- Footer sempre centrado, independentemente do que vem antes --- */
+footer{
+  background:#fff;
+  padding:.6rem 1rem;
+  color:#555;
+  font-size:.9rem;
+
+  /* centra mesmo que o footer tenha apenas texto “solto” */
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  /* garante que nenhuma regra anterior o deixa alinhado à esquerda */
+  text-align:center !important;
+}
+
+/* um bocadinho de respiro entre a faixa e o footer */
+.emergency{ margin-bottom: 1.25rem; }
+
+  </style>
+</head>
+<body>
+
+  <!-- HEADER (igual ao index) -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo">
+      <h1>Aldeia Segura Pessoas Seguras</h1>
+    </div>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="compreender.html">Compreender</a></li>
+        <li><a href="explorar.html">Explorar</a></li>
+        <li><a href="reduzir.html">Reduzir</a></li>
+        <li><a href="aldeias.html">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html">Contacto</a></li>
+      </ul>
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+      </div>
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav"><span></span></button>
+    </nav>
+  </header>
+
+  <!-- SCRIM + MENU MOBILE -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html">Início</a>
+    <a href="compreender.html">Compreender</a>
+    <a href="explorar.html">Explorar</a>
+    <a href="reduzir.html">Reduzir</a>
+    <a href="aldeias.html">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html">Contacto</a>
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <main class="ffr-wrap">
+    <!-- Cabeçalho da página -->
+    <section class="ffr-hero" aria-labelledby="page-title">
+      <h1 id="page-title">Viu um incêndio? Relate aqui</h1>
+      <p>Marque o local no mapa, indique a data/hora e descreva o que está a ver.</p>
+    </section>
+
+    <!-- Wizard -->
+    <div class="ffr-wizard">
+      <div class="ffr-step" id="wiz-1"><div class="ffr-dot">1</div><h2>Local & Tempo</h2></div>
+      <div class="ffr-step off" id="wiz-2"><div class="ffr-dot">2</div><h2>Observações</h2></div>
+      <div class="ffr-step off" id="wiz-3"><div class="ffr-dot">3</div><h2>Rever & Enviar</h2></div>
+    </div>
+
+    <div class="ffr-alert"><strong>⚠️ Emergência?</strong> Ligue <b>112</b>. Este formulário é para partilha comunitária e <u>não substitui</u> os canais oficiais.</div>
+
+    <!-- ===== SEÇÃO 1 ===== -->
+    <section class="ffr-section active" id="sec-1">
+      <div class="ffr-card">
+        <h3 style="margin:.2rem 0 1rem;color:var(--green)">1) Local & Tempo</h3>
+        <p class="ffr-muted" style="margin-top:-.4rem">Escolha no mapa, use a sua localização ou digite coordenadas <em>(lat,lon)</em>. Indique também a data/hora.</p>
+
+        <div class="ffr-row">
+          <div class="ffr-col">
+            <div class="ffr-group">
+              <label for="ffr-address" class="ffr-label">Procurar Localização</label>
+              <div style="display: flex; gap: .5rem;">
+                <input id="ffr-address" class="ffr-input" type="text" placeholder="Morada, localidade ou coordenadas..." style="flex-grow: 1;">
+                <button class="ffr-btn secondary" id="ffr-search" type="button" style="flex-shrink: 0;">Procurar</button>
+              </div>
+              <div class="ffr-actions" style="margin:.6rem 0 .5rem">
+                <button class="ffr-btn" id="ffr-geo">Usar minha localização</button>
+                <button class="ffr-btn secondary" id="ffr-clear">Limpar marcador</button>
+              </div>
+              <p class="ffr-muted" style="margin-top:-.2rem; margin-bottom:.6rem;"><strong>Dica:</strong> Clique diretamente no mapa para colocar ou mover o marcador.</p>
+              <div id="ffr-map-report"></div>
+              <p id="ffr-mapnote" class="ffr-muted" style="display:none;margin-top:.5rem"></p>
+            </div>
+          </div>
+
+          <div class="ffr-col">
+            <div class="ffr-group">
+              <label for="ffr-dt" class="ffr-label">Data e hora da observação *</label>
+              <input id="ffr-dt" class="ffr-input" type="datetime-local">
+            </div>
+
+            <div class="ffr-group">
+              <label class="ffr-label">Precisão de localização</label>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="ffr-prec" value="aprox" checked> <span>Enviar aprox. (~1 km)</span></label>
+                <label class="ffr-chip"><input type="radio" name="ffr-prec" value="precisa"> <span>Enviar precisa</span></label>
+              </div>
+              <p class="ffr-muted" style="margin-top:.35rem">Com “aprox.” as coordenadas são arredondadas antes de enviar.</p>
+            </div>
+
+            <div class="ffr-actions" style="margin-top:.8rem">
+              <button class="ffr-btn" id="next-1">Continuar</button>
+            </div>
+            <div class="ffr-toast err" id="t1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel e Mapa Colaborativo -->
+      <div class="ffr-card" style="margin-top: 1.5rem;">
+          <h3 style="margin:.2rem 0 1rem;color:var(--green)">Mapa Colaborativo</h3>
+          <p class="ffr-muted" style="margin-top:-.4rem">Veja os relatos recentes de outros utilizadores. Os dados são mostrados como pontos individuais para permitir a sua confirmação.</p>
+          <div class="ffr-panel">
+              <div class="ffr-panel-group">
+                  <span class="ffr-muted">Filtros:</span>
+                  <select id="ffr-minutes" class="ffr-select-sm">
+                      <option value="180" selected>Últimas 3h</option>
+                      <option value="360">Últimas 6h</option>
+                      <option value="720">Últimas 12h</option>
+                      <option value="1440">Últimas 24h</option>
+                  </select>
+                  <select id="ffr-celldeg" class="ffr-select-sm">
+                      <option value="0.01" selected>Célula ~1 km</option>
+                      <option value="0.02">Célula ~2 km</option>
+                      <option value="0.05">Célula ~5 km</option>
+                  </select>
+                  <label class="ffr-chip">
+                      <input type="checkbox" id="ffr-chamas-only"> <span>Só com chamas</span>
+                  </label>
+                  <span id="ffr-loading" class="ffr-badge">A carregar…</span>
+              </div>
+              <div class="ffr-panel-group">
+                  <span class="ffr-muted">Exportar:</span>
+                  <button class="ffr-btn-sm" id="ffr-export-csv">CSV</button>
+                  <button class="ffr-btn-sm" id="ffr-export-json">JSON</button>
+              </div>
+          </div>
+          <div id="ffr-map-collab" style="height: 450px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-top: .8rem; background: #f0f2f0;"></div>
+      </div>
+    </section>
+
+    <!-- ===== SEÇÃO 2 ===== -->
+    <section class="ffr-section" id="sec-2">
+      <div class="ffr-card" style="padding:1.1rem">
+        <h3 style="margin:.2rem 0 1rem;color:var(--green)">2) Observações</h3>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>O que observou?</h4><p class="ffr-sub">Escolha tudo o que se aplica</p>
+          </div>
+          <div class="ffr-chips">
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="fumo"> <span>Fumo</span></label>
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="chamas"> <span>Chamas visíveis</span></label>
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="brasas"> <span>Pavesas/brasas no ar</span></label>
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="cheiro"> <span>Cheiro intenso a fumo</span></label>
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="cinzas"> <span>Queda de cinzas</span></label>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Características do fogo</h4><p class="ffr-sub">Cor do fumo, altura de chamas e velocidade</p>
+          </div>
+          <div class="ffr-grid-3">
+            <div>
+              <div class="ffr-label">Cor do fumo</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="smoke" value="claro" checked> <span>Claro/Branco</span></label>
+                <label class="ffr-chip"><input type="radio" name="smoke" value="cinzento"> <span>Cinzento</span></label>
+                <label class="ffr-chip"><input type="radio" name="smoke" value="negro"> <span>Negro/Espesso</span></label>
+                <label class="ffr-chip"><input type="radio" name="smoke" value="castanho"> <span>Castanho/Amarelado</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="ffr-label">Altura de chamas (estimada)</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="flame" value="sem" checked> <span>Sem chamas</span></label>
+                <label class="ffr-chip"><input type="radio" name="flame" value="<0.5"> <span>&lt;0.5 m</span></label>
+                <label class="ffr-chip"><input type="radio" name="flame" value="0.5-2"> <span>0.5–2 m</span></label>
+                <label class="ffr-chip"><input type="radio" name="flame" value="2-4"> <span>2–4 m</span></label>
+                <label class="ffr-chip"><input type="radio" name="flame" value=">4"> <span>&gt;4 m</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="ffr-label">Velocidade de propagação</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="rate" value="lenta"> <span>Lenta</span></label>
+                <label class="ffr-chip"><input type="radio" name="rate" value="moderada" checked> <span>Moderada</span></label>
+                <label class="ffr-chip"><input type="radio" name="rate" value="rapida"> <span>Rápida</span></label>
+                <label class="ffr-chip"><input type="radio" name="rate" value="muito-rapida"> <span>Muito rápida</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Direção & vento</h4><p class="ffr-sub">Para onde avança e como sopra o vento</p>
+          </div>
+          <div class="ffr-grid-2">
+            <div class="ffr-group">
+              <label class="ffr-label">Direção de avanço aproximada</label>
+              <select id="ffr-dir" class="ffr-select">
+                <option value="">Não sei</option>
+                <option>Norte</option><option>Nordeste</option><option>Este</option>
+                <option>Sudeste</option><option>Sul</option><option>Sudoeste</option>
+                <option>Oeste</option><option>Noroeste</option><option>Indefinida</option>
+              </select>
+            </div>
+            <div class="ffr-group">
+              <label class="ffr-label">Direção do vento</label>
+              <select id="ffr-winddir" class="ffr-select">
+                <option value="">Não sei</option>
+                <option>Norte</option><option>Nordeste</option><option>Este</option>
+                <option>Sudeste</option><option>Sul</option><option>Sudoeste</option>
+                <option>Oeste</option><option>Noroeste</option><option>Variável</option>
+              </select>
+            </div>
+          </div>
+          <div class="ffr-group">
+            <div class="ffr-label">Intensidade do vento</div>
+            <div class="ffr-chips">
+              <label class="ffr-chip"><input type="radio" name="wind" value="fraco" checked> <span>Fraco</span></label>
+              <label class="ffr-chip"><input type="radio" name="wind" value="moderado"> <span>Moderado</span></label>
+              <label class="ffr-chip"><input type="radio" name="wind" value="forte"> <span>Forte</span></label>
+              <label class="ffr-chip"><input type="radio" name="wind" value="muito-forte"> <span>Muito forte</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Terreno & combustível</h4><p class="ffr-sub">Topografia e vegetação dominante</p>
+          </div>
+          <div class="ffr-grid-2">
+            <div>
+              <div class="ffr-label">Terreno / topografia</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="slope" value="plano"> <span>Plano</span></label>
+                <label class="ffr-chip"><input type="radio" name="slope" value="encosta-acima" checked> <span>Encosta acima</span></label>
+                <label class="ffr-chip"><input type="radio" name="slope" value="encosta-abaixo"> <span>Encosta abaixo</span></label>
+                <label class="ffr-chip"><input type="radio" name="slope" value="vale"> <span>Vale/Garganta</span></label>
+                <label class="ffr-chip"><input type="radio" name="slope" value="crista"> <span>Crista/Colo</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="ffr-label">Combustível dominante</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="fuel" value="ervas"> <span>Ervas/Pastagens</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="mato"> <span>Mato/Arbustos</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="pinhal"> <span>Pinhal</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="eucalipto" checked> <span>Eucaliptal</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="folhosas"> <span>Folhosas</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="agricola"> <span>Agrícola</span></label>
+                <label class="ffr-chip"><input type="radio" name="fuel" value="urbano"> <span>Urbano/Interface</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Exposição & pavesas</h4><p class="ffr-sub">Casas em risco e focos secundários</p>
+          </div>
+          <div class="ffr-grid-2">
+            <div>
+              <div class="ffr-label">Transporte de pavesas (spotting)</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="spot" value="nao"> <span>Não</span></label>
+                <label class="ffr-chip"><input type="radio" name="spot" value="sim-perto"> <span>Sim, perto (&lt;200 m)</span></label>
+                <label class="ffr-chip"><input type="radio" name="spot" value="sim-longe"> <span>Sim, longe (&ge;200 m)</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="ffr-label">Casas/infraestruturas em risco (distância)</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="exposure" value=">1000"> <span>&gt;1 km</span></label>
+                <label class="ffr-chip"><input type="radio" name="exposure" value="500-1000"> <span>500–1000 m</span></label>
+                <label class="ffr-chip"><input type="radio" name="exposure" value="200-500"> <span>200–500 m</span></label>
+                <label class="ffr-chip"><input type="radio" name="exposure" value="<200"> <span>&lt;200 m</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Estado & ações</h4><p class="ffr-sub">Situação atual e medidas</p>
+          </div>
+          <div class="ffr-grid-2">
+            <div>
+              <div class="ffr-label">Estado do foco</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="status" value="novo"> <span>Novo (&lt;10 min)</span></label>
+                <label class="ffr-chip"><input type="radio" name="status" value="ativo"> <span>Ativo</span></label>
+                <label class="ffr-chip"><input type="radio" name="status" value="controlado"> <span>Controlado</span></label>
+                <label class="ffr-chip"><input type="radio" name="status" value="extinto"> <span>Extinto</span></label>
+              </div>
+            </div>
+            <div>
+              <div class="ffr-label">Ações já tomadas</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="checkbox" name="act" value="112"> <span>Contactei 112</span></label>
+                <label class="ffr-chip"><input type="checkbox" name="act" value="evacuacao"> <span>Evacuação em curso</span></label>
+                <label class="ffr-chip"><input type="checkbox" name="act" value="protecao"> <span>Proteção de casas</span></label>
+                <label class="ffr-chip"><input type="checkbox" name="act" value="meios"> <span>Meios no terreno</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-block">
+          <div class="ffr-block-head">
+            <h4>Notas, anexos & confiança</h4><p class="ffr-sub">Informação adicional ajuda a priorizar</p>
+          </div>
+          <div class="ffr-grid-2">
+            <div class="ffr-group">
+              <label for="ffr-files" class="ffr-label">Fotografias/vídeo (opcional)</label>
+              <input id="ffr-files" class="ffr-input" type="file" multiple accept="image/*,video/*">
+              <p class="ffr-muted" style="margin-top:.35rem">Anexo local (não é carregado agora); aparece no resumo.</p>
+            </div>
+            <div class="ffr-group">
+              <div class="ffr-label">Grau de confiança</div>
+              <div class="ffr-chips">
+                <label class="ffr-chip"><input type="radio" name="conf" value="1"> <span>1</span></label>
+                <label class="ffr-chip"><input type="radio" name="conf" value="2"> <span>2</span></label>
+                <label class="ffr-chip"><input type="radio" name="conf" value="3" checked> <span>3</span></label>
+                <label class="ffr-chip"><input type="radio" name="conf" value="4"> <span>4</span></label>
+                <label class="ffr-chip"><input type="radio" name="conf" value="5"> <span>5</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ffr-group">
+            <label for="ffr-notes" class="ffr-label">Notas adicionais</label>
+            <textarea id="ffr-notes" class="ffr-textarea" placeholder="Direção/força do vento, acessos, proximidade a habitações, focos secundários, etc."></textarea>
+          </div>
+
+          <div class="ffr-grid-2">
+            <div class="ffr-group">
+              <label for="ffr-name" class="ffr-label">Nome (opcional)</label>
+              <input id="ffr-name" class="ffr-input" type="text" placeholder="O seu nome">
+            </div>
+            <div class="ffr-group">
+              <label for="ffr-contact" class="ffr-label">Contacto (opcional)</label>
+              <input id="ffr-contact" class="ffr-input" type="text" placeholder="Email ou telefone">
+            </div>
+          </div>
+        </div>
+
+        <div class="ffr-actions" style="margin-top:1rem">
+          <button class="ffr-btn secondary" id="back-2">Voltar</button>
+          <button class="ffr-btn" id="next-2">Rever & preparar envio</button>
+        </div>
+        <div class="ffr-toast err" id="t2"></div>
+      </div>
+    </section>
+
+    <!-- ===== SEÇÃO 3 ===== -->
+    <section class="ffr-section" id="sec-3">
+      <div class="ffr-card">
+        <h3 style="margin:.2rem 0 1rem;color:var(--green)">3) Rever & Enviar</h3>
+        <div id="ffr-review" class="ffr-muted" style="line-height:1.7"></div>
+
+        <div class="ffr-group" style="margin-top:1rem">
+          <label class="ffr-chip"><input type="checkbox" id="ffr-consent"> <span>Declaro que esta informação é verdadeira e enviada de boa fé.</span></label>
+        </div>
+
+        <div class="ffr-actions" style="margin-top:.6rem">
+          <button class="ffr-btn secondary" id="back-3">Voltar</button>
+          <button class="ffr-btn" id="ffr-submit">Enviar</button>
+        </div>
+
+        <div class="ffr-toast ok" id="ffr-ok" style="display: none; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <span>✅ Obrigado! Registo enviado.</span>
+          <button class="ffr-btn-sm" id="ffr-view-map">Ver no Mapa</button>
+        </div>
+        <div class="ffr-toast err" id="ffr-err">❌ Ocorreu um erro no envio.</div>
+      </div>
+    </section>
+  </main>
+
+  <section class="emergency">
+    <h3>⚠️ Em caso de emergência ⚠️</h3>
+    <p>Ligue imediatamente <strong>112</strong>.</p>
+  </section>
+  <footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- === JS do formulário/Leaflet/Supabase === -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // FIX para garantir que os ícones do Leaflet carregam corretamente
+    if (window.L) {
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+    }
+
+    const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+    const $  = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const show = (el, ok=true)=>{ el.classList.toggle('show', ok); };
+    const fmt = n => Number(n).toFixed(5);
+    const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+ 
+    // Mapas separados para Relato e Colaborativo
+    let reportMap, reportMarker=null, reportMapReady=false;
+    let collabMap = null, collabLegend = null;
+    let lat=null, lng=null;
+    let gridLayer = null, rawLayer = null;
+ 
+    function goto(n){
+      ['sec-1','sec-2','sec-3'].forEach(id=>$('#'+id).classList.remove('active'));
+      $('#sec-'+n).classList.add('active');
+      [1,2,3].forEach(i => $('#wiz-'+i).classList.toggle('off', i>n));
+      document.querySelector('.ffr-wrap')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+ 
+    function initReportMap(){
+      try{
+        if(!window.L) throw new Error('Leaflet não carregou');
+        reportMap = L.map('ffr-map-report', {zoomControl:true, attributionControl:false})
+               .setView([39.7,-8.0], 6);
+ 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(reportMap);
+ 
+        /* Escala métrica */
+        L.control.scale({position:'bottomleft', metric:true, imperial:false}).addTo(reportMap);
+ 
+        reportMap.on('click', (e)=> setPoint(e.latlng.lat, e.latlng.lng));
+        reportMapReady = true;
+      }catch(err){
+        reportMapReady = false;
+        const note = $('#ffr-mapnote');
+        note.textContent = '⚠️ Mapa indisponível. Pode digitar coordenadas (ex.: 41.12,-7.45) ou usar “Usar minha localização”.';
+        note.style.display = 'block';
+        console.warn(err);
+      }
+    }
+    initReportMap();
+    showGrid(false); // Carrega o mapa colaborativo ao iniciar
+ 
+    // Verifica se a URL contém coordenadas para centrar o mapa colaborativo
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlLat = urlParams.get('lat');
+      const urlLng = urlParams.get('lng');
+      const urlZoom = urlParams.get('zoom');
+
+      if (urlLat && urlLng && collabMap) {
+        const zoomLevel = parseInt(urlZoom, 10) || 14;
+        collabMap.setView([parseFloat(urlLat), parseFloat(urlLng)], zoomLevel);
+        // Adiciona um marcador temporário para destacar o local do alerta
+        L.marker([urlLat, urlLng]).addTo(collabMap).bindPopup('<b>Alerta de Incêndio</b>').openPopup();
+      }
+    } catch(e) { console.warn("Não foi possível ler os parâmetros da URL para o mapa.", e); }
+
+    function setPoint(la, ln){
+      lat=+la; lng=+ln;
+      if(reportMapReady){
+        if(!reportMarker){
+          reportMarker = L.marker([lat,lng], {draggable:true}).addTo(reportMap);
+          reportMarker.on('dragend', e=>{
+            const p = e.target.getLatLng();
+            lat = p.lat; lng = p.lng;
+            $('#ffr-address').value = fmt(lat)+','+fmt(lng);
+          });
+        }else reportMarker.setLatLng([lat,lng]);
+        reportMap.setView([lat,lng], Math.max(13, reportMap.getZoom()));
+      }
+      $('#ffr-address').value = fmt(lat)+','+fmt(lng);
+    }
+ 
+    $('#ffr-geo').addEventListener('click', (e)=>{
+      e.preventDefault();
+      if(!navigator.geolocation){ alert('Geolocalização não suportada.'); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => setPoint(pos.coords.latitude, pos.coords.longitude),
+        err => alert('Não foi possível obter a localização. Verifique permissões.')
+      );
+    });
+    $('#ffr-clear').addEventListener('click', (e)=>{
+      e.preventDefault();
+      lat=lng=null; $('#ffr-address').value='';
+      if(reportMarker && reportMapReady){ reportMap.removeLayer(reportMarker); reportMarker=null; }
+    });
+    $('#ffr-address').addEventListener('input', ()=>{
+      const v = $('#ffr-address').value.trim();
+      const m = v.match(/(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)/);
+      if(m){ setPoint(parseFloat(m[1]), parseFloat(m[3])); }
+    });
+
+    $('#ffr-search').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const addressInput = $('#ffr-address');
+        const query = addressInput.value.trim();
+        if (!query) {
+            alert('Por favor, introduza uma morada ou localidade para procurar.');
+            return;
+        }
+
+        const searchBtn = e.target;
+        const originalText = searchBtn.textContent;
+        searchBtn.disabled = true;
+        searchBtn.textContent = 'A procurar...';
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            if (!response.ok) {
+                throw new Error('O serviço de geocodificação não respondeu.');
+            }
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const result = data[0];
+                setPoint(result.lat, result.lon);
+            } else {
+                alert('Não foram encontrados resultados para a sua pesquisa. Tente ser mais específico.');
+            }
+        } catch (error) {
+            console.error('Erro na geocodificação:', error);
+            alert('Ocorreu um erro ao procurar a localização. Por favor, tente novamente.');
+        } finally {
+            searchBtn.disabled = false;
+            searchBtn.textContent = originalText;
+        }
+    });
+
+    function requireStep1(){
+      show($('#t1'), false);
+      const when = $('#ffr-dt').value;
+      if(!when){ $('#t1').textContent='Indique a data/hora.'; show($('#t1'), true); return false; }
+      if(lat==null || lng==null){
+        const v = $('#ffr-address').value.trim();
+        const m = v.match(/(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)/);
+        if(m) setPoint(parseFloat(m[1]), parseFloat(m[3]));
+        else { $('#t1').textContent='Escolha no mapa, use a sua localização ou digite coordenadas (lat,lon).'; show($('#t1'), true); return false; }
+      }
+      return true;
+    }
+    function requireStep2(){
+      show($('#t2'), false);
+      const checked = Array.from($$('input[name="seen"]:checked')).length>0;
+      if(!checked){ $('#t2').textContent='Selecione pelo menos uma observação (Fumo/Chamas/… ).'; show($('#t2'), true); return false; }
+      return true;
+    }
+ 
+    $('#next-1').addEventListener('click', (e)=>{ e.preventDefault(); if(requireStep1()){ goto(2); setTimeout(()=>reportMap?.invalidateSize(), 60); }});
+    $('#back-2').addEventListener('click', (e)=>{ e.preventDefault(); goto(1); setTimeout(()=>reportMap?.invalidateSize(), 60); });
+    $('#next-2').addEventListener('click', (e)=>{
+      e.preventDefault();
+      if(!requireStep2()) return;
+
+      const prec = ($('input[name="ffr-prec"]:checked')||{}).value || 'aprox';
+      const approx = (prec==='aprox');
+      const coords = approx
+        ? `${fmt(Math.round(lat*10)/10)},${fmt(Math.round(lng*10)/10)} (aprox.)`
+        : `${fmt(lat)},${fmt(lng)}`;
+
+      const seen = Array.from($$('input[name="seen"]:checked')).map(i=>i.value).join(', ') || '—';
+      const smoke = ($('input[name="smoke"]:checked')||{}).value || '—';
+      const flame = ($('input[name="flame"]:checked')||{}).value || '—';
+      const rate  = ($('input[name="rate"]:checked')||{}).value || '—';
+      const dir   = $('#ffr-dir').value || '—';
+      const wind  = ($('input[name="wind"]:checked')||{}).value || '—';
+      const winddir = $('#ffr-winddir').value || '—';
+      const slope = ($('input[name="slope"]:checked')||{}).value || '—';
+      const fuel  = ($('input[name="fuel"]:checked')||{}).value || '—';
+      const spot  = ($('input[name="spot"]:checked')||{}).value || '—';
+      const expo  = ($('input[name="exposure"]:checked')||{}).value || '—';
+      const status = ($('input[name="status"]:checked')||{}).value || '—';
+      const act   = Array.from($$('input[name="act"]:checked')).map(i=>i.value).join(', ') || '—';
+      const conf  = ($('input[name="conf"]:checked')||{}).value || '—';
+      const notes = $('#ffr-notes').value.trim() || '—';
+      const name  = $('#ffr-name').value.trim() || '—';
+      const contact = $('#ffr-contact').value.trim() || '—';
+      const files = $('#ffr-files').files; let fnames='—';
+      if(files && files.length){ fnames = Array.from(files).map(f=>f.name).join(', '); }
+
+      const html = `
+        <div class="ffr-block" style="margin-top:.4rem">
+          <div class="ffr-block-head"><h4>Resumo</h4><p class="ffr-sub">verifique antes de enviar</p></div>
+          <ul style="margin:.2rem 0 0;padding-left:1.1rem;line-height:1.9">
+            <li><b>Data/hora:</b> ${$('#ffr-dt').value}</li>
+            <li><b>Localização:</b> ${coords}</li>
+            <li><b>Observou:</b> ${seen}</li>
+            <li><b>Cor do fumo:</b> ${smoke} | <b>Chamas:</b> ${flame} | <b>Velocidade:</b> ${rate}</li>
+            <li><b>Avanço:</b> ${dir} | <b>Vento:</b> ${wind} (${winddir})</li>
+            <li><b>Terreno:</b> ${slope} | <b>Combustível:</b> ${fuel}</li>
+            <li><b>Pavesas:</b> ${spot} | <b>Exposição:</b> ${expo}</li>
+            <li><b>Estado:</b> ${status} | <b>Ações:</b> ${act}</li>
+            <li><b>Confiança:</b> ${conf}/5</li>
+            <li><b>Ficheiros:</b> ${fnames}</li>
+            <li><b>Notas:</b> ${notes}</li>
+            <li><b>Nome:</b> ${name} | <b>Contacto:</b> ${contact}</li>
+          </ul>
+        </div>`;
+      $('#ffr-review').innerHTML = html;
+      goto(3);
+    });
+
+    $('#back-3').addEventListener('click', (e)=>{ e.preventDefault(); goto(2); });
+
+    function payload(){
+      const prec = ($('input[name="ffr-prec"]:checked')||{}).value || 'aprox';
+      const approx = (prec==='aprox');
+      const coords = {
+        lat: approx ? Math.round(lat*10)/10 : +fmt(lat),
+        lng: approx ? Math.round(lng*10)/10 : +fmt(lng),
+        approx
+      };
+      return {
+        when: $('#ffr-dt').value,
+        coords,
+        seen: Array.from($$('input[name="seen"]:checked')).map(i=>i.value),
+        smoke: ($('input[name="smoke"]:checked')||{}).value || null,
+        flame: ($('input[name="flame"]:checked')||{}).value || null,
+        rate:  ($('input[name="rate"]:checked')||{}).value || null,
+        dir: $('#ffr-dir').value || null,
+        wind: ($('input[name="wind"]:checked')||{}).value || null,
+        winddir: $('#ffr-winddir').value || null,
+        slope: ($('input[name="slope"]:checked')||{}).value || null,
+        fuel:  ($('input[name="fuel"]:checked')||{}).value || null,
+        spot:  ($('input[name="spot"]:checked')||{}).value || null,
+        exposure: ($('input[name="exposure"]:checked')||{}).value || null,
+        status: ($('input[name="status"]:checked')||{}).value || null,
+        actions: Array.from($$('input[name="act"]:checked')).map(i=>i.value),
+        conf:  ($('input[name="conf"]:checked')||{}).value || null,
+        notes: $('#ffr-notes').value.trim() || null,
+        name: $('#ffr-name').value.trim() || null,
+        contact: $('#ffr-contact').value.trim() || null,
+        files: Array.from($('#ffr-files').files||[]).map(f=>({name:f.name, size:f.size})),
+        userAgent: navigator.userAgent
+      };
+    }
+
+    $('#ffr-submit').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      if(!$('#ffr-consent').checked){ alert('Confirme a declaração antes de enviar.'); return; }
+
+      const submitBtn = $('#ffr-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'A enviar...';
+      $('#ffr-ok').style.display = 'none';
+      $('#ffr-err').style.display = 'none';
+
+      try {
+        // 1. Preparar os dados
+        const { data: { session } } = await supabase.auth.getSession();
+        const data = payload();
+        
+        let uaHash = null;
+        try {
+          // A API crypto.subtle só está disponível em contextos seguros (HTTPS/localhost).
+          // Se falhar, não é crítico, por isso continuamos sem o hash.
+          if (window.crypto && window.crypto.subtle) {
+            const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data.userAgent || ""));
+            uaHash = Array.from(new Uint8Array(h)).slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (hashError) {
+          console.warn("Não foi possível gerar o hash do user-agent:", hashError);
+        }
+
+        const row = {
+          when: new Date(data.when).toISOString(),
+          approx: data.coords.approx, lat: data.coords.lat, lng: data.coords.lng,
+          seen: data.seen, smoke: data.smoke, flame: data.flame, rate: data.rate,
+          dir: data.dir, wind: data.wind, winddir: data.winddir,
+          slope: data.slope, fuel: data.fuel, spot: data.spot, exposure: data.exposure,
+          status: data.status, actions: data.actions,
+          conf: data.conf ? parseInt(data.conf, 10) : null,
+          user_id: session ? session.user.id : null,
+          notes: data.notes, name: data.name, contact: data.contact,
+          ua_hash: uaHash
+        };
+
+        // 2. Enviar para o Supabase. A base de dados irá ativar o webhook para enviar as notificações.
+        //    Como a função do servidor responde imediatamente, este passo é rápido.
+        const { error } = await supabase.from('relatos').insert(row);
+        if (error) {
+          throw error; // Lança o erro para ser apanhado pelo bloco catch.
+        }
+
+        // 3. Se correu bem, mostrar sucesso e atualizar o mapa.
+        const okToast = $('#ffr-ok');
+        okToast.style.display = 'flex';
+        okToast.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        if (gridLayer || rawLayer) {
+          await showGrid(true); // Atualiza o mapa colaborativo se já estiver visível
+        }
+      } catch (err) {
+        // Se algo falhou, mostrar a mensagem de erro exata.
+        console.error('Erro ao submeter o relato:', err);
+        const toast = $('#ffr-err');
+        toast.textContent = `❌ Ocorreu um erro no envio: ${err.message}`;
+        toast.style.display = 'block';
+      } finally {
+        // Reativar o botão em qualquer caso (sucesso ou erro).
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar';
+      }
+    });
+
+    function setLoading(on){ $('#ffr-loading').classList.toggle('on', !!on); }
+    function download(fn, mime, text){
+      const blob=new Blob([text],{type:mime}); const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=fn; a.click();
+    }
+    function toCSV(rows){
+      if(!rows.length) return '';
+      const headers=Object.keys(rows[0]);
+      const esc=v=>(v==null?'':String(v)).replace(/"/g,'""');
+      return [headers.join(','),...rows.map(r=>headers.map(h=>`"${esc(r[h])}"`).join(','))].join('\n');
+    }
+    async function fetchPublicRows(minutes = 180, chamasOnly = false) {
+      const sinceIso = new Date(Date.now() - minutes * 60000).toISOString();
+      
+      // Usar o cliente Supabase para ser mais robusto e aproveitar o RLS
+      let query = supabase.from('relatos')
+          // Pedimos também o ID, a contagem de confirmações e o ID do autor
+          .select('id, when, lat, lng, smoke, flame, rate, confirmation_count, status, user_id')
+          .gte('when', sinceIso);
+
+      if (chamasOnly) {
+        query = query.neq('flame', 'sem');
+      }
+
+      const { data, error } = await query;
+
+      if (error) { throw error; }
+      return data;
+    }
+    function scoreOf(r){
+      let s = 0;
+      if (r.smoke && r.smoke !== '—') s += 1;
+      if (r.flame && r.flame !== 'sem') s += 2;
+      if (r.rate  && r.rate  !== 'lenta') s += (r.rate==='moderada'?1: (r.rate==='rapida'?2:3));
+      return Math.min(5, s);
+    }
+    function rowsToGridGeoJSON(rows, cellDeg=0.01){
+      const keyOf = (la,ln)=>`${Math.round(la/cellDeg)*cellDeg},${Math.round(ln/cellDeg)*cellDeg}`;
+      const buckets = new Map();
+      for(const r of rows){
+        if(r.lat==null || r.lng==null) continue;
+        const k = keyOf(+r.lat, +r.lng);
+        const s = scoreOf(r);
+        const b = buckets.get(k) || {count:0, sumScore:0, maxScore:0, last_when:null, lat:0, lng:0};
+        b.count++; b.sumScore += s; b.maxScore = Math.max(b.maxScore, s);
+        b.lat = +k.split(',')[0]; b.lng = +k.split(',')[1];
+        if(!b.last_when || r.when > b.last_when) b.last_when = r.when;
+        buckets.set(k,b);
+      }
+      return {
+        type:'FeatureCollection',
+        features: Array.from(buckets.values()).map(b=>({
+          type:'Feature',
+          geometry:{ type:'Point', coordinates:[b.lng, b.lat] },
+          properties:{
+            count:b.count,
+            score_max:b.maxScore,
+            score_avg: +(b.sumScore / b.count).toFixed(2),
+            last_when:b.last_when
+          }
+        }))
+      };
+    }
+    function colorForScore(s){
+      if(s>=4) return '#e53935';
+      if(s>=3) return '#fb8c00';
+      if(s>=2) return '#fdd835';
+      if(s>0)  return '#7cb342';
+      return '#cfd8dc';
+    }
+
+    function initCollabMap() {
+        if (collabMap) return; // Já inicializado
+        collabMap = L.map('ffr-map-collab', { zoomControl: true, attributionControl: false }).setView([39.7, -8.0], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(collabMap);
+        L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(collabMap);
+
+        // Criar e adicionar a legenda ao mapa colaborativo
+        if (!collabLegend) {
+            collabLegend = L.control({ position: 'bottomright' });
+            collabLegend.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'legend-collab');
+                div.innerHTML = `
+                    <h4>Perigosidade (score)</h4>
+                    <div><i style="background: #e53935"></i> ≥ 4 (Muito Alta)</div>
+                    <div><i style="background: #fb8c00"></i> ≥ 3 (Alta)</div>
+                    <div><i style="background: #fdd835; border-color: #ccc;"></i> ≥ 2 (Média)</div>
+                    <div><i style="background: #7cb342"></i> > 0 (Baixa)</div>
+                    <div><i style="background: #cfd8dc"></i> 0 (Nula)</div>
+                `;
+                return div;
+            };
+            collabLegend.addTo(collabMap);
+        }
+    }
+
+    async function showGrid(isRefresh = false) {
+      try{
+        initCollabMap(); // Garante que o mapa existe
+        if (!isRefresh) await sleep(40); // Pequeno delay para renderizar
+        collabMap.invalidateSize();
+
+        const minutes=parseInt($('#ffr-minutes').value,10)||180;
+        const cellDeg=parseFloat($('#ffr-celldeg').value)||0.01;
+        const chamasOnly=$('#ffr-chamas-only').checked;
+
+        setLoading(true);
+        const rows = await fetchPublicRows(minutes, chamasOnly);
+        const gj   = rowsToGridGeoJSON(rows, cellDeg);
+        setLoading(false);
+
+        if(gridLayer){ gridLayer.remove(); gridLayer=null; }
+        if(rawLayer){ rawLayer.remove(); rawLayer=null; }
+
+        if(!gj.features.length){
+          if (!isRefresh) alert('Nenhum relato encontrado para o período selecionado.');
+          return;
+        }
+
+        gridLayer = L.geoJSON(gj, {
+          pointToLayer: (feat, latlng) => {
+            const s = feat.properties.score_max || 0;
+            const c = colorForScore(s);
+            return L.circleMarker(latlng, {
+              radius: 8,
+              fillColor: c,
+              color: c === '#fdd835' ? '#666' : '#455a64', // Borda mais escura para amarelo
+              weight: 1,
+              fillOpacity: 0.75
+            }).bindTooltip(
+              `<b>Relatos: ${feat.properties.count}</b><br>`+
+              `Perigosidade máx.: ${feat.properties.score_max}<br>`+
+              `Média: ${feat.properties.score_avg}<br>`+
+              `Mais recente (UTC): ${new Date(feat.properties.last_when).toLocaleTimeString('pt-PT')}`
+            );
+          }
+        }).addTo(collabMap);
+
+        if (!isRefresh) {
+            const b = gridLayer.getBounds();
+            if (b && b.isValid()) collabMap.fitBounds(b, { padding: [24, 24], maxZoom: 13 });
+        }
+      }catch(err){
+        console.error(err);
+        setLoading(false);
+        alert('Não foi possível carregar a camada colaborativa (ver consola).');
+      }
+    }
+    // Adiciona listeners aos filtros para atualizar o mapa automaticamente
+    $('#ffr-minutes').addEventListener('change', () => showGrid(true));
+    $('#ffr-celldeg').addEventListener('change', () => showGrid(true));
+    $('#ffr-chamas-only').addEventListener('change', () => showGrid(true));
+
+    setInterval(()=>{ if(collabMap && gridLayer){ showGrid(true); } }, 120000); // Atualiza a cada 2 minutos
+    $('#ffr-export-json').addEventListener('click', async ()=>{
+      try{
+        const minutes=parseInt($('#ffr-minutes').value,10)||180;
+        const chamasOnly=$('#ffr-chamas-only').checked;
+        setLoading(true);
+        const rows=await fetchPublicRows(minutes, chamasOnly);
+        setLoading(false);
+        download(`relatos_${minutes}min.json`,'application/json',JSON.stringify(rows,null,2));
+      }catch(e){ setLoading(false); alert('Falha ao exportar JSON'); }
+    });
+    $('#ffr-export-csv').addEventListener('click', async ()=>{
+      try{
+        const minutes=parseInt($('#ffr-minutes').value,10)||180;
+        const chamasOnly=$('#ffr-chamas-only').checked;
+        setLoading(true);
+        const rows=await fetchPublicRows(minutes, chamasOnly);
+        setLoading(false);
+        download(`relatos_${minutes}min.csv`,'text/csv',toCSV(rows));
+      }catch(e){ setLoading(false); alert('Falha ao exportar CSV'); }
+    });
+
+    $('#ffr-address').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); $('#next-1').click(); }});
+
+    $('#ffr-view-map').addEventListener('click', (e) => {
+        e.preventDefault();
+        goto(1); // Mostra a secção 1, que contém o mapa colaborativo
+
+        // Espera um pouco para a transição do 'goto' terminar antes de manipular o mapa
+        setTimeout(() => {
+            if (collabMap && lat != null && lng != null) {
+                // 1. Forçar a atualização do tamanho do mapa para corrigir a renderização
+                collabMap.invalidateSize();
+
+                // 2. Centrar o mapa na localização do relato
+                collabMap.setView([lat, lng], 14); // Zoom 14 é um bom detalhe
+
+                // 4. Faz scroll para o mapa colaborativo para garantir que está visível
+                $('#ffr-map-collab').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100); // 100ms de delay deve ser suficiente
+    });
+  });
+  </script>
+</body>
+</html>

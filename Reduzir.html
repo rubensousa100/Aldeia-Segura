@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reduzir - Aldeia Segura Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+  <style>
+    :root{
+      --green:#2e7d32; --green-2:#2e7d32;
+      --mint:#e8f5e9; --line:#e7e7e7;
+      --shadow:0 2px 6px rgba(0,0,0,.08);
+      --text:#333;
+      --header-h:72px; /* altura do header (desktop) */
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:'Roboto',sans-serif;color:var(--text);line-height:1.6;display:flex;flex-direction:column;min-height:100vh}
+
+    /* ===== HEADER (igual ao index) ===== */
+    header{
+      background:#fff;display:flex;align-items:center;justify-content:space-between;
+      padding:1rem 2rem;box-shadow:0 2px 5px rgba(0,0,0,.1);
+      position:sticky;top:0;z-index:1000;gap:1rem
+    }
+    .logo{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo img{width:35px;height:35px}
+    .logo h1{margin:0;color:var(--green);font-weight:700;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    nav{display:flex;align-items:center;gap:1rem}
+    nav ul{list-style:none;display:flex;gap:1.2rem;margin:0;padding:0}
+    nav a{text-decoration:none;color:var(--green);font-weight:500;font-size:.95rem}
+
+    #langSwitch{
+      border:1px solid #cfe7d0;border-radius:20px;padding:.25rem .6rem;
+      color:#2e7d32;background:#fff;font-weight:600
+    }
+    .login-btn{
+      background:var(--green);color:#fff !important;padding:.45rem .95rem;border-radius:25px;
+      font-weight:700;border:1px solid #2e6b39;transition:background .2s,transform .1s;text-decoration:none
+    }
+    .login-btn:hover{background:#2a6f2d;transform:translateY(-1px)}
+    .login-btn:active{transform:translateY(0)}
+
+    /* ===== MENU MOBILE (copiado do index) ===== */
+    .burger{
+      display:none;width:40px;height:40px;border:1px solid #cfe7d0;border-radius:10px;background:#fff;cursor:pointer;
+      align-items:center;justify-content:center
+    }
+    .burger span{display:block;width:18px;height:2px;background:#2e7d32;position:relative}
+    .burger span::before,.burger span::after{content:"";position:absolute;left:0;width:18px;height:2px;background:#2e7d32}
+    .burger span::before{top:-6px}.burger span::after{top:6px}
+
+    .mobile-nav{
+      position:fixed; inset:var(--header-h) 0 0 0; background:#fff; border-top:1px solid var(--line);
+      padding:1rem 1.25rem 2rem; overflow:auto; display:none !important; z-index:2000;
+    }
+    .mobile-nav.open{display:block !important}
+    .mobile-nav a{display:block;padding:.85rem 0;font-weight:700;font-size:1.18rem}
+    .mobile-nav a:link,.mobile-nav a:visited{color:var(--green);text-decoration:none}
+    .mobile-nav a:hover{text-decoration:underline}
+    .mobile-nav .actions{display:flex;gap:.6rem;align-items:center;margin-top:.6rem}
+
+    .scrim{
+      position:fixed; inset:var(--header-h) 0 0 0; background:rgba(0,0,0,.28); backdrop-filter:saturate(120%) blur(2px);
+      display:none !important; z-index:1500;
+    }
+    .scrim.open{display:block !important}
+
+    body.no-scroll{position:fixed;width:100%;overflow:hidden;overscroll-behavior:none;touch-action:none}
+
+    @media (min-width:901px){
+      .mobile-nav,.scrim{display:none !important}
+      .burger{display:none !important}
+    }
+    @media (max-width:900px){
+      :root{ --header-h:64px; }
+      header{padding:.8rem 1rem}
+      nav ul{display:none}
+      #langSwitch,.login-btn{display:none}
+      .burger{display:flex}
+    }
+    @media (max-width:600px){
+      :root{ --header-h:56px; }
+      .mobile-nav,.scrim{inset:var(--header-h) 0 0 0}
+    }
+
+    /* ===== HERO ===== */
+    .hero{background:url('Imagens/incendio20.jpg') center/cover no-repeat;color:#fff;height:35vh;display:flex;justify-content:center;align-items:center;text-align:center;position:relative}
+    .hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .hero-content{position:relative;z-index:1;max-width:900px}
+    .hero h2{font-size:2rem;margin:0}
+
+    /* ===== CONTEÚDO REDUZIR ===== */
+    .content{padding:2rem;max-width:1100px;margin:0 auto}
+    .content h3{color:var(--green);margin-top:2rem}
+    .lead{background:#f8faf8;border-left:6px solid var(--green);padding:1rem 1.2rem;border-radius:8px;margin:1rem 0}
+
+    .toc{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.25rem 0}
+    .pill{background:#eef7ef;color:var(--green-2);padding:.35rem .7rem;border-radius:999px;font-size:.9rem;text-decoration:none;border:1px solid #d5ead7}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+    .card{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+    .card .body{padding:1rem 1.1rem}
+    .card h4{margin:.2rem 0 .4rem;color:var(--green)}
+    .icon{font-size:1.2rem;margin-right:.45rem}
+
+    .call{background:var(--mint);border:1px solid #c8e6c9;border-left:6px solid var(--green);padding:1rem 1.2rem;border-radius:10px}
+    .note{background:#fffaf2;border:1px solid #ffe0a3;border-left:6px solid #ffb300;padding:1rem 1.2rem;border-radius:10px}
+    .warn{background:#fff3f3;border:1px solid #ffcdd2;border-left:6px solid #e53935;padding:1rem 1.2rem;border-radius:10px}
+
+    .video-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+    .video-grid iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;box-shadow:var(--shadow)}
+
+    /* Acordeão (FAQ) */
+    .accordion{border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+    .acc-item+.acc-item{border-top:1px solid var(--line)}
+    .acc-btn{width:100%;text-align:left;padding:1rem;display:flex;justify-content:space-between;align-items:center;background:#fff;border:0;font:inherit;cursor:pointer}
+    .acc-btn span{font-weight:600;color:#222}
+    .acc-icon{font-weight:700;font-size:1.2rem;line-height:1}
+    .acc-panel{display:none;padding:0 1rem 1rem;background:#fff}
+    .acc-item.open .acc-panel{display:block}
+    .acc-item.open .acc-btn{background:#fafafa}
+
+    .inline-pill{display:inline-block;padding:.2rem .55rem;border-radius:999px;background:#eef7ef;border:1px solid #d5ead7;color:var(--green-2);font-weight:600;text-decoration:none}
+
+    .emergency{background:#e1f8e4;padding:.5rem 1rem;width:100%;margin:2rem auto;border-top:2px solid var(--green-2);border-bottom:2px solid var(--green-2);border-radius:8px;display:flex;flex-direction:column;align-items:center}
+    .emergency h3{color:#c0392b;font-size:1.2rem;margin:.2rem 0}
+    .emergency p{font-size:.95rem;margin:.2rem 0}
+
+    footer{background:#fff;padding:.5rem;text-align:center;margin-top:auto;font-size:.9rem;color:#555}
+
+    @media(max-width:992px){.grid-3{grid-template-columns:1fr 1fr}.video-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:768px){.hero h2{font-size:1.6rem}.content{padding:1rem}.grid-2,.grid-3{grid-template-columns:1fr}.video-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo">
+      <h1 data-i18n="site.title">Aldeia Segura Pessoas Seguras</h1>
+    </div>
+
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html" data-i18n="nav.home">Início</a></li>
+        <li><a href="compreender.html" data-i18n="nav.understand">Compreender</a></li>
+        <li><a href="explorar.html" data-i18n="nav.explore">Explorar</a></li>
+        <li><a href="reduzir.html" data-i18n="nav.reduce">Reduzir</a></li>
+        <li><a href="aldeias.html" data-i18n="nav.villages">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html" data-i18n="nav.contact">Contacto</a></li>
+      </ul>
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-i18n="nav.login" data-auth-link>Login / Registar</a>
+      </div>
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav"><span></span></button>
+    </nav>
+  </header>
+
+  <!-- SCRIM + MENU MOBILE (igual ao index) -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html" data-i18n="nav.home">Início</a>
+    <a href="compreender.html" data-i18n="nav.understand">Compreender</a>
+    <a href="explorar.html" data-i18n="nav.explore">Explorar</a>
+    <a href="reduzir.html" data-i18n="nav.reduce">Reduzir</a>
+    <a href="aldeias.html" data-i18n="nav.villages">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html" data-i18n="nav.contact">Contacto</a>
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-i18n="nav.login" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Reduzir o Risco de Incêndio</h2>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="lead">
+      <strong>Objetivo:</strong> diminuir a probabilidade de ignição, travar a propagação e proteger pessoas, casas e bens.
+      Segue as indicações da <strong>ANEPC</strong>, <strong>ICNF</strong>, <strong>GNR</strong>, <strong>IPMA</strong>. Em emergência liga <strong>112</strong> (e <strong>117</strong> para proteção da floresta).
+    </div>
+
+    <!-- Navegação rápida -->
+    <div class="toc">
+      <a class="pill" href="#perigo">Níveis de perigo & ações</a>
+      <a class="pill" href="#calendario">Calendário anual</a>
+      <a class="pill" href="#zonas-casa">Zonas da casa</a>
+      <a class="pill" href="#materiais">Materiais e detalhes críticos</a>
+      <a class="pill" href="#trabalhos">Trabalhos rurais & máquinas</a>
+      <a class="pill" href="#queimas">Queimas & queimadas</a>
+      <a class="pill" href="#plano">Plano familiar & Kit 72h</a>
+      <a class="pill" href="#evacuacao">Evacuação e abrigo</a>
+      <a class="pill" href="#animais">Animais</a>
+      <a class="pill" href="#videos">Vídeos</a>
+      <a class="pill" href="#faq">FAQ</a>
+      <a class="pill" href="#recursos">Recursos oficiais</a>
+    </div>
+
+    <h3 id="perigo">Níveis de perigo (IPMA/ANEPC) & ações</h3>
+    <div class="card"><div class="body">
+      <p>
+        Consulta o <em>perigo meteorológico diário</em> no
+        <a class="inline-pill" href="https://www.ipma.pt/pt/riscoincendio/" target="_blank" rel="noopener">IPMA</a>
+        e adapta as atividades:
+      </p>
+      <div class="grid-3">
+        <div>
+          <h4>Moderado/Elevado</h4>
+          <ul>
+            <li>Evita faíscas (máquinas, rebarbadoras). Mantém água/extintor por perto.</li>
+            <li>Adia queimas não urgentes e nunca sem autorização/aviso.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Muito Elevado</h4>
+          <ul>
+            <li>Suspende trabalhos geradores de calor/faíscas.</li>
+            <li>Reforça vigilância à volta da casa. Verifica vias de evacuação.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Extremo</h4>
+          <ul>
+            <li>Evita áreas florestais. Mantém família e vizinhos informados.</li>
+            <li>Prepara kit e veículo. Acompanha avisos oficiais em permanência.</li>
+          </ul>
+        </div>
+      </div>
+    </div></div>
+
+    <h3 id="calendario">Calendário anual de preparação</h3>
+    <div class="grid-2">
+      <div class="card"><div class="body">
+        <h4>Inverno / Primavera</h4>
+        <ul>
+          <li>Planeia limpezas e “mosaicos” de combustível.</li>
+          <li>Revê coberturas, beirais, caleiras, vedações e acessos.</li>
+          <li>Treina o plano familiar e atualiza contactos.</li>
+        </ul>
+      </div></div>
+      <div class="card"><div class="body">
+        <h4>Verão / Outono</h4>
+        <ul>
+          <li>Limpa a zona 0–5 m e verifica águas/extintor.</li>
+          <li>Em dias críticos, adia trabalhos e reforça vigilância.</li>
+          <li>Pós-incêndio: avalia danos, regista e planeia melhorias.</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <h3 id="zonas-casa">Preparar a casa por zonas (escudo progressivo)</h3>
+    <div class="grid-3">
+      <article class="card"><div class="body">
+        <h4><span class="icon">🏠</span>Zona 0–5 m</h4>
+        <ul>
+          <li>Sem combustíveis junto a fachadas (vasos plásticos, lenha, tapetes).</li>
+          <li>Solo mineral (lajedo/brita). Relva curta e verde.</li>
+          <li>Caleiras/beirais limpos; redes metálicas finas (&lt;5 mm) em vãos.</li>
+        </ul>
+      </div></article>
+      <article class="card"><div class="body">
+        <h4><span class="icon">🌳</span>Zona 5–30 m</h4>
+        <ul>
+          <li>Poda de ramos baixos; remover matos sob copas.</li>
+          <li>Separar copas e abrir passagens para meios de socorro.</li>
+          <li>Depósitos e botijas em local ventilado e sinalizado.</li>
+        </ul>
+      </div></article>
+      <article class="card"><div class="body">
+        <h4><span class="icon">🗺️</span>Zona 30–100 m</h4>
+        <ul>
+          <li>Mosaico de combustível (alternar usos e limpezas).</li>
+          <li>Gestão de bermas/taludes e pontos de água acessíveis.</li>
+          <li>Sinalização e numeração visíveis da morada/acesso.</li>
+        </ul>
+      </div></article>
+    </div>
+
+    <h3 id="materiais">Materiais e detalhes críticos da casa</h3>
+    <div class="grid-2">
+      <div class="card"><div class="body">
+        <h4>Reforça a resistência</h4>
+        <ul>
+          <li>Telhados com materiais não combustíveis; veda beirais e frestas.</li>
+          <li>Portadas/estores resistentes ao calor nas fachadas expostas.</li>
+          <li>Rede metálica fina em ventilações, sótãos e chaminés.</li>
+        </ul>
+      </div></div>
+      <div class="card"><div class="body">
+        <h4>Sinalização & acessos</h4>
+        <ul>
+          <li>Morada e coordenadas em placa visível; refletor noturno.</li>
+          <li>Acessos livres (largura/altura) e ponto de inversão de marcha.</li>
+          <li>Mapa da propriedade com pontos de água e zonas limpas.</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <h3 id="trabalhos">Trabalhos rurais & uso de máquinas</h3>
+    <div class="grid-2">
+      <div class="card"><div class="body">
+        <h4><span class="icon">✅</span>Fazer</h4>
+        <ul>
+          <li>Horas frescas; água/extintor ABC junto ao trabalho.</li>
+          <li>Para-faíscas/capacete de proteção; catalisadores limpos.</li>
+          <li>Estacionar fora de erva alta; manter área húmida/limpa.</li>
+        </ul>
+      </div></div>
+      <div class="card"><div class="body">
+        <h4><span class="icon">⛔</span>Evitar</h4>
+        <ul>
+          <li>Rebarbadoras/soldaduras em dias de perigo alto.</li>
+          <li>Queimadas sem autorização; nunca sem vigilância.</li>
+          <li>Queimas com vento/temperaturas elevadas.</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <h3 id="queimas">Queimas vs. queimadas</h3>
+    <div class="card"><div class="body">
+      <p><strong>Queima</strong>: eliminação de sobrantes (pequenas pilhas). <strong>Queimada</strong>: uso do fogo para renovação de pastagens/gestão de povoamentos (maior risco). Ambas exigem regras específicas e, muitas vezes, <strong>autorização ou comunicação prévia</strong>. Confirma sempre na tua Autarquia/ICNF e segue as condições impostas (meios, horário, vigilância e meteorologia favorável).</p>
+      <div class="warn" style="margin-top:.6rem">Nunca uses o fogo em dias de perigo Muito Elevado/Extremo. Mantém água e ferramentas à mão e não abandones o local sem extinção total.</div>
+    </div></div>
+
+    <h3 id="plano">Plano familiar & Kit 72 horas</h3>
+    <div class="card"><div class="body">
+      <ul>
+        <li>Rotas alternativas e ponto(s) de encontro; responsabilidades por crianças/idosos/pessoas com mobilidade reduzida.</li>
+        <li><strong>Kit 72h:</strong> água, alimentos, medicação, documentos, rádio, lanterna, powerbank, máscara P2/FFP2, primeiros socorros, vestuário e higiene.</li>
+        <li>Lista de contactos: 112, 117, saúde, vizinhos, Junta/Autarquia.</li>
+      </ul>
+      <div class="call" style="margin-top:.6rem">
+        <strong>Download: </strong>
+        <a href="Imagens/Checklist.pdf" download target="_blank" rel="noopener" style="color:#1b5e20;text-decoration:underline">Checklist de Autoproteção (PDF)</a>
+      </div>
+    </div></div>
+
+    <h3 id="evacuacao">Evacuação e permanência</h3>
+    <div class="grid-2">
+      <div class="card"><div class="body">
+        <h4><span class="icon">🚗</span>Se for dada ordem para evacuar</h4>
+        <ol>
+          <li>Fecha gás/energia; portas e janelas. Leva kit/documentos.</li>
+          <li>Segue rotas definidas; evita vias com fumo intenso.</li>
+          <li>Confirma presença de todos no ponto de encontro.</li>
+        </ol>
+      </div></div>
+      <div class="card"><div class="body">
+        <h4><span class="icon">🛡️</span>Se tiveres de permanecer</h4>
+        <ul>
+          <li>Fica em zona mineral limpa. Protege entradas e beirais.</li>
+          <li>Mangueiras/extintor prontos. Observa pavesas e reacendimentos.</li>
+          <li>Respira através de pano húmido em caso de fumo.</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <h3 id="animais">Animais de companhia e pecuária</h3>
+    <div class="card"><div class="body">
+      <ul>
+        <li>Transportadora/trela, identificação e medicação. Água e alimentos.</li>
+        <li>Pontos de acolhimento definidos (familiares/abrigo municipal).</li>
+        <li>Pecuária: portões acessíveis, bebedouros operacionais e plano de recolha/transferência.</li>
+      </ul>
+    </div></div>
+
+    <h3 id="videos">Vídeos explicativos</h3>
+    <div class="video-grid">
+      <iframe src="https://www.youtube.com/embed/GEmfZzHYtQU" title="Prevenção e Proteção Civil"></iframe>
+      <iframe src="https://www.youtube.com/embed/Gjm61V6NH4U" title="Vento e propagação do fogo"></iframe>
+      <iframe src="https://www.youtube.com/embed/1ZyZ3v5r3Xw?rel=0" title="Como as casas ardem (brasas/IUF)"></iframe>
+    </div>
+
+    <h3 id="faq">Perguntas frequentes</h3>
+    <div class="accordion" id="acc">
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Regar o telhado ajuda?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Apenas com fogo muito próximo e se for seguro. Prioridade: zona 0–5 m limpa, aberturas protegidas e evacuação quando indicada.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Qual o extintor recomendado?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Extintor ABC (pó químico), revisto anualmente e acessível. Aprende a usar e verifica pressão/selo.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Posso fazer queimas?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Confirma sempre com a Autarquia/ICNF. Em muitos períodos exige-se autorização/comunicação prévia, meios de 1.ª intervenção e vigilância contínua.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Quando devo evacuar?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Quando for dada ordem pelas autoridades ou se a aproximação do fogo/fumo tornar insegura a permanência. Se tiveres dúvidas, evacua cedo por rotas seguras previamente definidas.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>E se ficar encurralado?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Procura zona mineral (estrada, terreiro), afasta-te da vegetação, entra num edifício/viatura com janelas fechadas e ventilação desligada. Protege vias aéreas com pano húmido.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Máscaras ajudam contra o fumo?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel"><p>Máscaras P2/FFP2 reduzem partículas inaladas, mas não substituem a evacuação. Evita esforço e procura locais com ar limpo.</p></div>
+      </div>
+    </div>
+
+    <h3 id="recursos">Recursos oficiais</h3>
+    <div class="links-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-top:.4rem">
+      <a class="link-card" href="https://prociv.gov.pt/pt/home/" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🚨 ANEPC — Proteção Civil</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Avisos à população, ocorrências e programas “Aldeia Segura / Pessoas Seguras”.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">prociv.gov.pt</span>
+        </div>
+      </a>
+      <a class="link-card" href="https://www.ipma.pt/pt/riscoincendio/" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🌡️ IPMA — Perigo de Incêndio Rural</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Mapa oficial diário do perigo por concelho e data.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">ipma.pt</span>
+        </div>
+      </a>
+      <a class="link-card" href="https://fogos.icnf.pt/rif/" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🔥 ICNF — Risco de Incêndio (RIF)</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Indicadores e condicionantes por nível de risco.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">fogos.icnf.pt</span>
+        </div>
+      </a>
+      <a class="link-card" href="https://www.gnr.pt/ambiente.aspx" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🦅 GNR — SEPNA / SOS Ambiente 808&nbsp;200&nbsp;520</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Linha 24h para denúncias e informações ambientais.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">gnr.pt/ambiente.aspx</span>
+        </div>
+      </a>
+      <a class="link-card" href="https://www.sgifr.gov.pt/" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🇵🇹 SGIFR — Fogos Rurais</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Portal interinstitucional: prevenção, planeamento e relatórios.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">sgifr.gov.pt</span>
+        </div>
+      </a>
+      <a class="link-card" href="https://aldeiasseguras.pt/" target="_blank" rel="noopener" style="display:block;background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .12s ease;">
+        <div class="body" style="padding:.6rem .75rem">
+          <div class="title" style="display:flex;align-items:center;gap:.45rem;color:var(--green);font-weight:700;font-size:.95rem;margin:0">🏘️ Aldeia Segura, Pessoas Seguras</div>
+          <p class="desc" style="margin:.2rem 0 .4rem;color:#555;font-size:.85rem;line-height:1.4">Programa oficial para a interface urbano-florestal.</p>
+          <span class="tag" style="display:inline-block;font-size:.75rem;background:#eef7ef;color:var(--green-2);padding:.12rem .4rem;border-radius:999px;border:1px solid #d5ead7">aldeiasseguras.pt</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="emergency">
+    <h3>⚠️ Em caso de emergência ⚠️</h3>
+    <p>Ligue imediatamente <strong>112</strong></p>
+  </section>
+
+  <footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+</body>
+</html>

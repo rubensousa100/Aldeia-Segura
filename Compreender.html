@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compreender | Aldeias Seguras Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+  <style>
+    :root{
+      --green:#2e7d32;--green-d:#1f5d24;
+      --mint:#e8f5e9;--mint-2:#f1fbf2;
+      --line:#e7e7e7;--shadow:0 2px 6px rgba(0,0,0,.08);
+      --text:#333;--ink:#111;
+      --header-h: 72px; /* altura header desktop */
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:'Roboto',sans-serif;background:#f6f7f6;color:var(--text);line-height:1.65;display:flex;flex-direction:column;min-height:100vh}
+
+    /* ===== HEADER (desktop) ===== */
+    header{
+      background:#fff;padding:1rem 2rem;
+      display:flex;justify-content:space-between;align-items:center;
+      box-shadow:0 2px 5px rgba(0,0,0,.08);
+      position:sticky;top:0;z-index:1000;
+    }
+    .logo{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo img{width:35px;height:35px}
+    .logo h1{margin:0;color:var(--green);font-weight:700;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    nav{display:flex;align-items:center;gap:1rem}
+    nav ul{list-style:none;display:flex;gap:1.2rem;margin:0;padding:0}
+    nav a{text-decoration:none;color:var(--green);font-weight:500;font-size:.95rem}
+
+    /* ações (iguais à home) */
+    #langSwitch{
+      border:1px solid #cfe7d0;border-radius:20px;
+      padding:.25rem .6rem;color:#2e7d32;background:#fff;font-weight:600;
+    }
+    .login-btn{
+      background:var(--green);color:#fff !important;
+      padding:.45rem .95rem;border-radius:25px;font-weight:700;
+      border:1px solid #2e6b39;text-decoration:none;
+      transition:background .2s, transform .1s;
+    }
+    .login-btn:hover{ background:#2a6f2d; transform:translateY(-1px) }
+    .login-btn:active{ transform:translateY(0) }
+
+    /* ===== HERO ===== */
+    .hero{
+      background:url('Imagens/incendio20.jpg') center/cover no-repeat;
+      color:#fff;text-align:center;padding:3.2rem 1rem;position:relative
+    }
+    .hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
+    .hero > *{position:relative;z-index:1}
+    .hero h2{font-size:2rem;margin:.2rem 0}
+    .hero p{max-width:860px;margin:.4rem auto 0;opacity:.95}
+
+    /* ===== TOC (igual ao Reduzir, NÃO sticky) ===== */
+    .toc{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0 1.25rem}
+    .pill{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .8rem;border:1px solid var(--line);border-radius:999px;background:#eef7ef;color:#2d4733;font-size:.92rem;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.04);border-color:#d5ead7}
+    .pill.active{background:var(--mint);border-color:#cfe8d3}
+
+    .content{max-width:1060px;margin:1.2rem auto 2.6rem;padding:0 1.1rem}
+    .lead{background:#f8faf8;border-left:6px solid var(--green);padding:1rem 1.2rem;border-radius:8px;box-shadow:var(--shadow);margin:.5rem 0 1.2rem}
+
+    .grid{display:grid;gap:1rem}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+
+    .card{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+    .card .body{padding:1rem 1.1rem}
+
+    .eyebrow{display:inline-block;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:#2c4731;background:#eaf7ed;border:1px solid #d7ebdb;padding:.18rem .5rem;border-radius:6px}
+    h3{color:var(--green);margin:1.3rem 0 .6rem}
+    h4{color:#1f4d2c;margin:1rem 0 .4rem}
+    p{margin:.7rem 0}
+
+    figure{margin:0;display:flex;flex-direction:column;align-items:center}
+    .fig{width:100%;max-width:900px;margin:.8rem auto}
+    .fig img{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+
+    .eq-intro{background:#f1fbf2;border:1px solid #dbeee0;border-radius:10px;padding:.9rem 1rem;color:#2d4733;max-width:980px;margin:.4rem auto 1rem}
+    .eq-figure{max-width:720px;margin:0 auto 1rem}
+    .eq-figure img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:var(--shadow)}
+
+    .band{background:var(--green);color:#fff;margin:2rem 0 0;padding:2.2rem 0}
+    .band .inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:1.2rem;padding:0 1.1rem}
+    .band h2{margin:0;font-size:2rem}
+
+    .accordion{border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);background:#fff}
+    .acc-item+.acc-item{border-top:1px solid var(--line)}
+    .acc-btn{width:100%;text-align:left;padding:1rem;display:flex;justify-content:space-between;align-items:center;background:#fff;border:0;font:inherit;cursor:pointer}
+    .acc-btn span{font-weight:600;color:#222}
+    .acc-icon{font-weight:700;font-size:1.2rem;line-height:1}
+    .acc-panel{display:none;padding:0 1rem 1rem;background:#fff}
+    .acc-item.open .acc-panel{display:block}
+    .acc-item.open .acc-btn{background:#fafafa}
+
+    .refs{list-style:disc;padding-left:1.4rem;margin:.4rem 0 0}
+    .refs li{margin:.55rem 0}
+    .refs a{color:var(--green);text-decoration:none}
+    .refs a:hover{text-decoration:underline}
+    .refs .mini{font-size:.9rem;opacity:.9;margin-left:.45rem}
+
+    .emergency{background:#e1f8e4;padding:.6rem 1rem;width:100%;margin:2rem auto;border-top:2px solid #2e7d32;border-bottom:2px solid #2e7d32;border-radius:8px;display:flex;flex-direction:column;align-items:center}
+    .emergency h3{color:#c0392b;font-size:1.2rem;margin:.2rem 0}
+    .emergency p{font-size:.95rem;margin:.2rem 0}
+
+    footer{background:#fff;padding:.5rem;text-align:center;margin-top:auto;font-size:.9rem;color:#555}
+
+    /* ===== Mobile Nav (apenas <900px) ===== */
+    .burger{
+      display:none; width:40px; height:40px; border:1px solid #cfe7d0;
+      border-radius:10px; background:#fff; cursor:pointer;
+      align-items:center; justify-content:center;
+    }
+    .burger span{
+      display:block; width:18px; height:2px; background:#2e7d32; position:relative;
+    }
+    .burger span::before,.burger span::after{
+      content:""; position:absolute; left:0; width:18px; height:2px; background:#2e7d32;
+    }
+    .burger span::before{ top:-6px } .burger span::after{ top:6px }
+
+    /* SEMPRE escondido por defeito; abre só com .open */
+    .mobile-nav{
+      position:fixed; inset:var(--header-h) 0 0 0;
+      background:#fff; border-top:1px solid var(--line);
+      padding:1rem 1.25rem 2rem; overflow:auto;
+      display:none !important; z-index:2000;
+    }
+    .mobile-nav.open{ display:block !important; }
+
+    .scrim{
+      position:fixed; inset:var(--header-h) 0 0 0;
+      background:rgba(0,0,0,.28); backdrop-filter:saturate(120%) blur(2px);
+      display:none !important; z-index:1500;
+    }
+    .scrim.open{ display:block !important; }
+
+    /* ESTILO dos links do painel mobile */
+    .mobile-nav a{
+      display:block; padding:.85rem 0;
+      font-weight:700; font-size:1.18rem;
+    }
+    .mobile-nav a:link,
+    .mobile-nav a:visited{ color:var(--green); text-decoration:none; }
+    .mobile-nav a:hover{ text-decoration:underline; }
+    .mobile-nav .actions{ display:flex; gap:.6rem; align-items:center; margin-top:.6rem }
+
+    /* bloquear scroll quando menu abre (iOS-safe) */
+    body.no-scroll{ position:fixed; width:100%; overflow:hidden; overscroll-behavior:none; touch-action:none; }
+
+    /* Desktop seguro: nada do mobile aparece */
+    @media (min-width:901px){
+      .mobile-nav,.scrim{ display:none !important; }
+      .burger{ display:none !important; }
+    }
+    /* Tablet/Telemóvel */
+    @media (max-width:900px){
+      :root{ --header-h: 64px; }
+      header{ padding:.8rem 1rem }
+      nav ul{ display:none }
+      #langSwitch, .login-btn{ display:none } /* ficam no painel mobile */
+      .burger{ display:flex }
+    }
+    /* Telemóveis pequenos */
+    @media (max-width:600px){
+      :root{ --header-h: 56px; }
+      .mobile-nav, .scrim{ inset:var(--header-h) 0 0 0; }
+    }
+
+    /* Conteúdos responsivos */
+    @media (max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
+    @media (max-width:760px){.grid-2,.grid-3{grid-template-columns:1fr}.hero h2{font-size:1.6rem}}
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo">
+      <h1 data-i18n="site.title">Aldeia Segura Pessoas Seguras</h1>
+    </div>
+
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html"        data-i18n="nav.home">Início</a></li>
+        <li><a href="compreender.html"  data-i18n="nav.understand">Compreender</a></li>
+        <li><a href="explorar.html"     data-i18n="nav.explore">Explorar</a></li>
+        <li><a href="reduzir.html"      data-i18n="nav.reduce">Reduzir</a></li>
+        <li><a href="aldeias.html"      data-i18n="nav.villages">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html"     data-i18n="nav.contact">Contacto</a></li>
+      </ul>
+
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-i18n="nav.login" data-auth-link>Login / Registar</a>
+      </div>
+      <!-- hamburger (só em mobile) -->
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">
+        <span></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- SCRIM + MENU MOBILE -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html"        data-i18n="nav.home">Início</a>
+    <a href="compreender.html"  data-i18n="nav.understand">Compreender</a>
+    <a href="explorar.html"     data-i18n="nav.explore">Explorar</a>
+    <a href="reduzir.html"      data-i18n="nav.reduce">Reduzir</a>
+    <a href="aldeias.html"      data-i18n="nav.villages">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html"     data-i18n="nav.contact">Contacto</a>
+
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-i18n="nav.login" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <!-- CONTEÚDO -->
+  <section class="hero">
+    <h2>Compreender o Risco de Incêndios Rurais</h2>
+    <p>Os incêndios não são todos iguais. O risco combina a probabilidade de acontecer, a força do fogo e o que pode ser atingido. Veja como cada peça se liga e por onde agir primeiro.</p>
+  </section>
+
+  <!-- TOC NO INÍCIO DO CONTEÚDO (não sticky) -->
+  <section class="content" id="visao">
+    <div class="toc" aria-label="Navegação de secções">
+      <a class="pill" href="#visao">Visão geral</a>
+      <a class="pill" href="#equacao">Equação do risco</a>
+      <a class="pill" href="#probabilidade">Probabilidade</a>
+      <a class="pill" href="#intensidade">Intensidade</a>
+      <a class="pill" href="#exposicao">Exposição</a>
+      <a class="pill" href="#suscetibilidade">Suscetibilidade</a>
+      <a class="pill" href="#comportamento">Comportamento do fogo</a>
+      <a class="pill" href="#organizacao">Resposta & comando</a>
+      <a class="pill" href="#faq">FAQ</a>
+      <a class="pill" href="#artigos">Artigos</a>
+    </div>
+
+    <div class="lead">
+      <span class="eyebrow">Objetivo</span>
+      <p>Explicar, de forma clara e prática, como o risco de incêndio rural resulta do encontro entre <em>perigo</em> (probabilidade × intensidade) e <em>vulnerabilidade</em> (exposição × suscetibilidade). A página apresenta os quatro fatores, ilustra o comportamento do fogo e descreve, de alto nível, a organização da resposta.</p>
+    </div>
+
+    <h3 id="equacao">Equação do risco</h3>
+    <p class="eq-intro">
+      O risco de incêndio rural de uma comunidade resulta da combinação da
+      <strong>probabilidade</strong> e da <strong>intensidade</strong> (em conjunto designadas por
+      “<em>perigo</em>”), bem como da <strong>exposição</strong> e da
+      <strong>suscetibilidade</strong> (em conjunto designadas por “<em>vulnerabilidade</em>”).
+    </p>
+    <figure class="eq-figure">
+      <img src="Imagens/Risco.jpg" alt="Esquema: perigo (probabilidade × intensidade) e vulnerabilidade (exposição × suscetibilidade) combinam-se em risco." />
+    </figure>
+
+    <!-- PROBABILIDADE -->
+    <section id="probabilidade" class="band"><div class="inner"><h2>Probabilidade de incêndio rural</h2></div></section>
+    <div class="card"><div class="body">
+      <h4>Probabilidade de incêndio rural</h4>
+      <p>A probabilidade de incêndio rural corresponde à probabilidade anual de ocorrência de um incêndio rural num local específico. À escala comunitária, essa probabilidade é calculada com base na média das unidades habitacionais.</p>
+      <p>A estimativa da probabilidade de incêndios rurais resulta da modelação do comportamento do fogo em milhares de simulações de possíveis épocas de incêndio. Em cada simulação, os fatores que influenciam a probabilidade de ocorrência de um incêndio — incluindo o clima, a topografia e as ignições — são ajustados com base em padrões observados nas últimas décadas. Importa salientar que a probabilidade de incêndios rurais não é preditiva e não reflete as condições meteorológicas ou de risco de incêndio atualmente previstas.</p>
+      <p>Em termos simples, a probabilidade de incêndio rural expressa a possibilidade de que qualquer local específico (pixel) seja afetado por um incêndio florestal num determinado ano, não fornecendo, contudo, informação sobre a intensidade do fogo caso este venha a ocorrer.</p>
+    </div></div>
+
+    <!-- INTENSIDADE -->
+    <section id="intensidade" class="band"><div class="inner"><h2>Intensidade</h2></div></section>
+    <div class="card"><div class="body">
+      <h4>Intensidade de incêndio rural</h4>
+      <p>A intensidade de um incêndio rural corresponde a uma medida da energia expectável libertada por esse incêndio.</p>
+      <p>A intensidade depende, em grande medida, das condições da paisagem física (nomeadamente a topografia) e do combustível vegetal disponível para arder. Por exemplo, um incêndio rural numa encosta arborizada pode apresentar uma intensidade superior à de um incêndio em pastagens situadas em terreno plano. Embora a intensidade do incêndio rural seja, em termos técnicos, medida em unidades de transferência de calor por comprimento do perímetro do incêndio, é mais facilmente observável e comunicada através do comprimento das chamas.</p>
+    </div></div>
+
+    <!-- EXPOSIÇÃO -->
+    <section id="exposicao" class="band"><div class="inner"><h2>Exposição</h2></div></section>
+    <div class="card"><div class="body">
+      <h4>Exposição</h4>
+      <p>A exposição corresponde à coincidência espacial entre a probabilidade e a intensidade de incêndios rurais e a localização das comunidades.</p>
+      <p>Qualquer comunidade situada em áreas onde a probabilidade de incêndio rural seja superior a zero (isto é, onde exista a possibilidade de ocorrência de incêndio) encontra-se exposta a incêndios rurais. Por exemplo, uma habitação implantada numa zona florestal inflamável está exposta a este tipo de risco.</p>
+      <p>As comunidades podem estar expostas de forma direta, através da vegetação nativa adjacente, ou de forma indireta, devido ao transporte de brasas ou à ignição sucessiva de habitação em habitação.</p>
+    </div></div>
+
+    <!-- SUSCETIBILIDADE -->
+    <section id="suscetibilidade" class="band"><div class="inner"><h2>Suscetibilidade</h2></div></section>
+    <div class="card"><div class="body">
+      <h4>Suscetibilidade</h4>
+      <p>A suscetibilidade corresponde à vulnerabilidade de uma habitação ou de uma comunidade a sofrer danos em caso de incêndio florestal. Em termos gerais, parte-se do princípio de que todas as habitações expostas a incêndios rurais poderão ser danificadas, sendo a gravidade desses danos diretamente proporcional à intensidade do fogo.</p>
+    </div></div>
+
+    <!-- Comportamento -->
+    <h3 id="comportamento">Comportamento & propagação</h3>
+    <div class="card"><div class="body">
+      <div class="grid grid-2">
+        <div>
+          <h4>Meteorologia</h4>
+          <p>Vento inclina chamas e transporta pavesas; temperatura alta e humidade relativa baixa secam finos, encurtando o tempo de ignição. Mudanças rápidas (frentes, brisas de vale/montanha) podem virar a cabeça do incêndio.</p>
+          <h4>Topografia</h4>
+          <p>Propagação acelera encosta acima (pré-aquecimento). Gargantas e vales estreitos funcionam como chaminé; cumeadas canalizam vento.</p>
+          <h4>Combustível</h4>
+          <p>Finos controlam velocidade; médios/grossos condicionam duração e severidade. Continuidade vertical favorece transição para copas.</p>
+        </div>
+        <figure class="fig">
+          <img src="Imagens/Esquema.jpg" alt="Esquema de cabeça, flancos, retaguarda e focos secundários" loading="lazy" />
+          <figcaption>Terminologia operacional usada no reconhecimento e comando.</figcaption>
+        </figure>
+      </div>
+    </div></div>
+
+    <!-- Organização -->
+    <h3 id="organizacao">Resposta operacional & comando</h3>
+    <div class="card"><div class="body">
+      <div class="grid grid-3">
+        <div>
+          <h4>Sequência</h4>
+          <p>Deteção/alerta → mobilização → reconhecimento → ataque inicial → reforço (se necessário) → rescaldo → vigilância.</p>
+        </div>
+        <div>
+          <h4>Táticas</h4>
+          <p>Direto, indireto ou combinado, consoante segurança e objetivos. Meios aéreos reduzem intensidade e ganham tempo às equipas de terra.</p>
+        </div>
+        <div>
+          <h4>Comando</h4>
+          <p>Setorização (cabeça, flancos, retaguarda) e prioridades: vida humana, bens/infraestruturas, valor ambiental. Comunicação clara é crítica.</p>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- ARTIGOS -->
+    <h3 id="artigos">Artigos científicos e leituras recomendadas</h3>
+    <div class="card"><div class="body">
+      <ul class="refs">
+        <li>
+          McCaffrey S., McGee T.K., Coughlan M. (2020).
+          <a href="https://doi.org/10.1016/B978-0-12-815721-3.00008-5" target="_blank" rel="noopener">
+            Understanding wildfire mitigation and preparedness in the context of extreme wildfires and disasters: Contributions from the social sciences to understand human response to wildfire
+          </a>. In: Tedim F., Leone V., McGee T.K. (eds.), <em>Extreme Wildfire Events and Disasters</em>. Elsevier. 155–174.
+        </li>
+        <li>
+          Radeloff V.C., Mockrin M.H., Helmers D., Carlson A., Hawbaker T.J., Martinuzzi S., Schug F., Alexandre P.M., Kramer H.A., Pidgeon A. (2023).
+          <a href="https://www.science.org/doi/10.1126/science.ade9223" target="_blank" rel="noopener">
+            Rising wildfire risk to homes in the United States, especially in grasslands and shrublands
+          </a>. <em>Science</em> 382(6671): 702–707.
+        </li>
+        <li>
+          Alexander M.E. (2000).
+          <a href="https://www.frames.gov/catalog/10922" target="_blank" rel="noopener">
+            Fire behaviour as a factor in forest and rural fire suppression
+          </a>. Rural Fire Research Report No. 5.
+        </li>
+        <li>
+          Pereira M.G., Malamud B.D., Trigo R.M., Alves P.I. (2013).
+          <a href="https://ui.adsabs.harvard.edu/abs/2013ClRes..57..187P/abstract" target="_blank" rel="noopener">
+            Effects of regional climate change on rural fires in Portugal
+          </a>. <em>Climate Research</em> 57: 187–200.
+        </li>
+        <li>
+          Tedim F. (2018).
+          <a href="https://hdl.handle.net/10216/118277" target="_blank" rel="noopener">
+            O futuro dos incêndios rurais em Portugal: será possível construir uma sociedade resiliente a eventos extremos?
+          </a>. In: <em>O Rural Depois do Fogo</em>. ESAC/IPC, Coimbra. 239–258.
+        </li>
+        <li>
+          Tedim F., Pinto D.M., Correia F. (2022).
+          <a href="https://www.researchgate.net/publication/367151068_A_SEGURANCA_DAS_POPULACOES_AOS_INCENDIOS_RURAIS_EM_PORTUGAL_AS_POTENCIALIDADES_E_FRAGILIDADES_DOS_PROGRAMAS_ALDEIA_SEGURA_E_PESSOAS_SEGURAS" target="_blank" rel="noopener">
+            A segurança das populações aos incêndios rurais em Portugal: potencialidades e fragilidades dos programas “Aldeia Segura” e “Pessoas Seguras”
+          </a>. XVII Colóquio Ibérico de Geografia (Livro de Atas).
+        </li>
+      </ul>
+    </div></div>
+
+  </section>
+
+  <section class="emergency" aria-labelledby="emerg-title">
+    <h3 id="emerg-title">⚠️ Em caso de emergência ⚠️</h3>
+    <p>Ligue imediatamente <strong>112</strong>.</p>
+  </section>
+
+  <footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+</body>
+</html>

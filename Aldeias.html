@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aldeia Segura | Aldeias Seguras Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="main.css" />
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+
+<style>
+  :root{
+    --green:#2e7d32; --green-2:#256b2a;
+    --mint:#e8f5e9; --line:#e7e7e7;
+    --shadow:0 2px 6px rgba(0,0,0,.08);
+    --text:#333;
+    --header-h:72px; /* altura do header em desktop */
+    --space-xs:.4rem; --space-sm:.6rem; --space-md:.9rem; --space-lg:1.2rem;
+  }
+
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; font-family:"Roboto",sans-serif; color:var(--text); line-height:1.6;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+
+  /* ===== Mobile Nav (igual às outras páginas) ===== */
+  .burger{
+    display:none; width:40px; height:40px; border:1px solid #cfe7d0;
+    border-radius:10px; background:#fff; cursor:pointer;
+    align-items:center; justify-content:center;
+  }
+  .burger span{
+    display:block; width:18px; height:2px; background:#2e7d32; position:relative;
+  }
+  .burger span::before,.burger span::after{
+    content:""; position:absolute; left:0; width:18px; height:2px; background:#2e7d32;
+  }
+  .burger span::before{ top:-6px } .burger span::after{ top:6px }
+
+  .mobile-nav{
+    position:fixed; inset:var(--header-h) 0 0 0;
+    background:#fff; border-top:1px solid var(--line);
+    padding:1rem 1.25rem 2rem; overflow:auto;
+    display:none !important; z-index:2000;
+  }
+  .mobile-nav.open{ display:block !important; }
+
+  .scrim{
+    position:fixed; inset:var(--header-h) 0 0 0;
+    background:rgba(0,0,0,.28); backdrop-filter:saturate(120%) blur(2px);
+    display:none !important; z-index:1500;
+  }
+  .scrim.open{ display:block !important; }
+
+  .mobile-nav a{
+    display:block; padding:.85rem 0;
+    font-weight:700; font-size:1.18rem;
+  }
+  .mobile-nav a:link,
+  .mobile-nav a:visited{ color:var(--green); text-decoration:none; }
+  .mobile-nav a:hover{ text-decoration:underline; }
+  .mobile-nav .actions{ display:flex; gap:.6rem; align-items:center; margin-top:.6rem }
+
+  body.no-scroll{ position:fixed; width:100%; overflow:hidden; overscroll-behavior:none; touch-action:none; }
+
+  /* Desktop seguro: nada do mobile aparece */
+  @media (min-width:901px){
+    .mobile-nav,.scrim{ display:none !important; }
+    .burger{ display:none !important; }
+  }
+
+  /* Hero */
+  .hero{
+    background:url('Imagens/Incendio20.jpg') center/cover no-repeat;
+    color:#fff; text-align:center; padding:3rem 1rem; position:relative;
+  }
+  .hero::after{ content:""; position:absolute; inset:0; background:rgba(0,0,0,.5); }
+  .hero h2{ position:relative; z-index:1; font-size:2rem; margin:0; }
+
+  /* Mapa */
+  #map{
+    height:540px; width:80%; margin:2rem auto 0;
+    border:2px solid #ccc; border-radius:10px; position:relative;
+  }
+  #map .leaflet-top{ top:14px; }
+  #map .leaflet-left{ left:12px; }
+  #map .leaflet-right{ right:12px; }
+  #map .leaflet-control{ box-shadow:0 2px 6px rgba(0,0,0,.12); }
+
+  /* Legenda fora do mapa */
+  .legend{
+    position:static; display:flex; gap:1rem; justify-content:center;
+    flex-wrap:wrap; background:#fff;
+    border:1px solid #ddd; border-radius:8px; box-shadow:var(--shadow);
+    padding:.6rem .9rem; margin:.75rem auto 1.5rem; width:fit-content;
+  }
+  .legend .row{ display:flex; align-items:center; gap:.45rem; margin:.1rem 0; }
+  .chip{ width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid #999; }
+  .chip.road{ background:#777; }
+  .chip.build{ background:#ff69b4; }
+  .chip.aldeia{ background:#ff6f00; border-color:#fff; }
+  .chip.ar{ background:#d32f2f; }
+
+  /* Toast */
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:16px;
+    background:#ffe9e9; color:#a33; border:1px solid #f5b5b5;
+    border-radius:10px;
+    padding:.6rem .9rem; box-shadow:var(--shadow); z-index:10000; display:none;
+  }
+  .toast.success {
+    background: #e7f6ea;
+    color: #2e7d32;
+    border-color: #cfe7d0;
+  }
+
+  /* Stats */
+  .stats{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:1.5rem; padding:2.5rem 1rem;
+    background:#f9fdf9; border-top:2px solid #c8e6c9; border-bottom:2px solid #c8e6c9;
+    max-width:900px; margin:0 auto;
+  }
+  .stat-box{
+    background:#fff; border-radius:10px; padding:1rem;
+    box-shadow:var(--shadow); text-align:center;
+    flex:1 1 calc(33.333% - 1rem); max-width:250px;
+  }
+  .stat-box h3{ font-size:1.6rem; color:#2e7d32; margin:0 0 .5rem; }
+  .stat-box p{ font-size:.95rem; color:#555; }
+
+  /* --------- Fichas (secção principal) ---------- */
+  .fichas{ width:min(96%, 1200px); max-width:1200px; margin:1.5rem auto; }
+  .fichas h3{ color:var(--green); margin:0 0 .8rem; }
+
+  details.ficha{
+    background:#fff; border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow);
+    margin-bottom:1rem; overflow:hidden;
+  }
+  summary.ficha-summary{
+    list-style:none; cursor:pointer; padding:.9rem 1.1rem;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  summary.ficha-summary::-webkit-details-marker{ display:none; }
+  .sum-left{ display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; }
+  .sum-title{ font-weight:800; color:#1d1d1d; }
+  .sum-tag{
+    display:inline-block; padding:.15rem .5rem; border-radius:999px; background:#eef7ef;
+    border:1px solid #d5ead7; color:#2e7d32; font-size:.8rem;
+  }
+  .sum-actions{ display:flex; gap:.5rem; align-items:center; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+    padding:.45rem .7rem; border-radius:9px;
+    border:1px solid #cfe7d0;
+    background:#fff; color:#2e7d32; font-weight:700; text-decoration:none; cursor:pointer; white-space:nowrap;
+  }
+  .btn.map{ background:var(--green); color:#fff; border-color:#2e7d32; }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  .ficha-inner{ padding:1rem 1.25rem 1rem 1.1rem; border-top:1px solid var(--line); }
+
+  .grid{ display:grid; grid-template-columns:1.2fr 1fr; gap:1rem; }
+  .box{
+    border:1px solid var(--line); border-radius:10px; padding:1rem 1.1rem; background:#fff;
+  }
+  .box h5{ margin:.1rem 0 .6rem; color:#2e7d32; font-size:1rem; }
+  .mini-map{ height:220px; border-radius:8px; border:1px solid #ddd; }
+
+  .mini-controls{ display:flex; flex-wrap:wrap; gap:.6rem; margin:.2rem 0 .6rem; font-size:.9rem; }
+  .mini-controls label{
+    display:flex; align-items:center; gap:.35rem; background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:.2rem .5rem; cursor:pointer;
+  }
+
+  .meta{ font-size:.93rem; color:#444; }
+  .meta b{ color:#222; }
+  .aldeia-photo{
+    width:100%; max-height:220px; object-fit:cover; border-radius:8px; border:1px solid #ddd; display:block;
+  }
+
+  /* --- PAINÉIS DE INFORMAÇÃO (Acordeão) --- */
+  .info-comments {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    align-items: start; /* Alinha os items no topo */
+  }
+  .info-comments summary.btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: .7rem 1.3rem;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #4b5563;
+    transition: background .2s, color .2s;
+  }
+  .info-comments summary.btn:hover {
+    background: #e5e7eb;
+  }
+  .info-comments details[open] > summary.btn {
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green-2);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .info-comments .box {
+    border: 1px solid var(--line);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    background: #fff;
+    padding: 1.2rem;
+    margin-top: -1px; /* Cobre a borda inferior do summary */
+  }
+  .info-comments details:not([open]) > .box { display: none; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:.6rem; }
+
+  /* --------- Formulários / inputs ---------- */
+  .box input[type="text"], .box input[type="date"], .box input[type="number"], .box textarea, .box select {
+    width:100%; padding:.55rem .65rem; border:1px solid #ddd; border-radius:8px; font:inherit; background:#fff;
+    transition:border .15s, box-shadow .15s; box-sizing:border-box; min-height:40px;
+  }
+  .box textarea{ min-height:70px; resize:vertical; }
+  .box input:focus, .box select:focus, .box textarea:focus{
+    outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(58,125,68,.15);
+  }
+
+  /* --- Formulários em Grelha (substitui table.clean) --- */
+  .form-grid { display: flex; flex-direction: column; gap: .5rem; }
+  .form-grid-header {
+    display: grid; gap: .8rem;
+    padding: .5rem .8rem;
+    background: #f3f8f3;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: .85rem;
+    color: #333;
+  }
+  .form-grid-row {
+    display: grid; gap: .8rem;
+    align-items: center;
+    padding: .4rem;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+  .form-grid-row:hover { background: #fcfdff; }
+  .form-grid-row .btn[data-del-row] {
+    padding: .4rem .8rem; background: #fff; border-color: #ddd; color: #c0392b;
+    justify-self: end;
+  }
+  .form-grid-row .btn[data-del-row]:hover { background: #fff5f5; border-color: #f5c6cb; }
+
+  /* Layouts de grelha para cada tipo de formulário */
+  .pop-grid { grid-template-columns: minmax(120px, 2fr) minmax(60px, 0.8fr) minmax(60px, 0.8fr) minmax(150px, 2fr) minmax(150px, 3fr) auto; }
+  .osl-grid { grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto; }
+  .prev-grid { grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.5fr) minmax(80px, 1fr) minmax(150px, 2fr) auto; }
+  .sim-grid { grid-template-columns: minmax(100px, 1fr) minmax(200px, 3fr) minmax(100px, 1fr) auto; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* Controles extra */
+  .controls{ display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.6rem; }
+
+  /* FAQ */
+  .faq-wrap{ width:95%; max-width:980px; margin:2rem auto; }
+  .faq-wrap h3{ color:var(--green); margin:0 0 .8rem; }
+  .accordion{
+    border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); background:#fff;
+  }
+  details.acc-item + details.acc-item{ border-top:1px solid var(--line); }
+  summary.acc-btn{ list-style:none; padding:1rem 1.1rem; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+  summary.acc-btn::-webkit-details-marker{ display:none; }
+  .acc-btn span{ font-weight:600; color:#222; }
+  .acc-icon{ font-weight:700; font-size:1.2rem; line-height:1; }
+  .acc-icon::before{ content:'+'; }
+  details[open] .acc-btn{ background:#fafafa; }
+  details[open] .acc-icon::before{ content:'–'; }
+  .acc-panel{ display:none; padding:0 1.1rem 1rem; }
+  details[open] .acc-panel{ display:block; }
+  .faq-img{ display:block; height:auto; border:1px solid #ddd; border-radius:12px; margin:.6rem auto 0; max-width:min(100%, 520px); box-shadow:var(--shadow); }
+  .faq-img.sm{ max-width:380px; }
+  .faq-media{ display:flex; justify-content:center; }
+
+  /* Emergência + footer */
+  .emergency{
+    background:#e1f8e4; padding:.5rem 1rem;
+    width:100%; margin:2rem auto;
+    border-top:2px solid #2e7d32; border-bottom:2px solid #2e7d32; border-radius:8px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .emergency h3{ color:#c0392b; font-size:1.2rem; margin:.2rem 0; }
+  .emergency p{ font-size:.95rem; margin:.2rem 0; }
+  footer{ background:#fff; padding:.5rem; text-align:center; margin-top:auto; font-size:.9rem; color:#555; }
+
+  /* Comentários/Problemas */
+  .comment-form{ display:grid; gap:.6rem; }
+  .comment-form .row{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+  .comment-actions{ display:flex; gap:.6rem; flex-wrap:wrap; margin:.5rem 0; }
+  .filters{ display:flex; gap:.6rem; flex-wrap:wrap; }
+  .filters .btn{ padding:.3rem .6rem; font-weight:600; border-radius:999px; }
+  .filters .btn.active{ background:var(--green); color:#fff; border-color:var(--green-2); }
+  .comment-item{ border:1px solid var(--line); border-radius:10px; padding:.6rem .7rem; margin:.5rem 0; background:#fff; box-shadow:var(--shadow); }
+  .badge{ display:inline-block; padding:.12rem .45rem; border-radius:999px; border:1px solid #e0e0e0; background:#f7f7f7; font-size:.8rem; margin-right:.35rem; }
+  .badge.cat{ background:#eef7ef; border-color:#d5ead7; color:#2e7d32; }
+  .badge.sev{ background:#fff3cd; border-color:#ffe08a; color:#7a5b00; }
+  .badge.status{ background:#eaf2ff; border-color:#bcd6ff; color:#1b4f9c; }
+  .badge.status.res{ background:#e7f6ea; border-color:#cfe7d0; color:#2e7d32; }
+  .comment-head{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+  .comment-body{ margin:.35rem 0; white-space:pre-wrap; }
+  .comment-meta{ font-size:.85rem; color:#666; }
+  .comment-actions .btn{ border-color:#ddd; color:#444; }
+
+  /* Helpers */
+  .small{ font-size:.86rem; color:#666; }
+  .muted{ color:#777; }
+  .pulse{ box-shadow:0 0 0 3px rgba(58,125,68,.25) inset; }
+
+  /* --------- Responsivo ---------- */
+  @media (max-width:1200px) {
+    .grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width:900px){
+    :root{ --header-h: 64px; }
+    header{ padding:.8rem 1rem }
+    nav ul{ display:none }
+    #langSwitch, .login-btn{ display:none } /* ficam no painel mobile */
+    .burger{ display:flex }
+
+    .fichas, .faq-wrap{ width:92%; }
+    table.clean thead th{ white-space:normal; }
+  }
+  @media (max-width:768px){
+    .hero h2{ font-size:1.5rem; }
+    #map{ width:95%; }
+    .info-comments, .two-col, .comment-form .row, .row { grid-template-columns: 1fr; }
+    .comment-head { flex-direction: column; align-items: flex-start; gap: .8rem; }
+
+    /* Formulários em grelha responsivos */
+    .form-grid-header { display: none; }
+    .pop-grid, .osl-grid, .prev-grid, .sim-grid {
+      grid-template-columns: 1fr; /* Uma coluna para todos os campos */
+      gap: .6rem; /* Espaço entre os campos empilhados */
+    }
+    .form-grid-row { padding: .8rem; }
+    .form-grid-row .btn[data-del-row] {
+      justify-self: stretch;
+      margin-top: .4rem;
+      text-align: center;
+    }
+  }
+  @media (max-width:600px){
+    :root{ --header-h: 56px; }
+    .mobile-nav, .scrim{ inset:var(--header-h) 0 0 0; }
+  }
+  @media (min-width:1440px){
+    .fichas{ width:1320px; }
+  }
+
+  @media (max-width: 500px) {
+    .stat-box { flex-basis: calc(50% - .75rem); }
+  }
+
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <img src="Imagens/Aldeia.png" alt="Logo" />
+    <h1>Aldeia Segura Pessoas Seguras</h1>
+  </div>
+  <nav aria-label="Principal">
+    <ul>
+      <li><a href="index.html">Início</a></li>
+      <li><a href="compreender.html">Compreender</a></li>
+      <li><a href="explorar.html">Explorar</a></li>
+      <li><a href="reduzir.html">Reduzir</a></li>
+      <li><a href="aldeias.html">Aldeias Seguras</a></li>
+      <li><a href="Incendio.html">Fogo à Vista</a></li>
+      <li><a href="contacto.html">Contacto</a></li>
+    </ul>
+    <div data-auth-container style="display: contents;">
+      <select id="langSwitch" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+    </div>
+    <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav"><span></span></button>
+  </nav>
+</header>
+
+<!-- Scrim + Mobile Nav -->
+<div id="scrim" class="scrim" aria-hidden="true"></div>
+<aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+  <a href="index.html">Início</a>
+  <a href="compreender.html">Compreender</a>
+  <a href="explorar.html">Explorar</a>
+  <a href="reduzir.html">Reduzir</a>
+  <a href="aldeias.html">Aldeias Seguras</a>
+  <a href="Incendio.html">Fogo à Vista</a>
+  <a href="contacto.html">Contacto</a>
+  <div class="actions" data-auth-container>
+    <select id="langSwitch2" aria-label="Idioma">
+      <option value="pt">PT</option><option value="en">EN</option>
+    </select>
+    <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+  </div>
+</aside>
+
+<section class="hero"><h2>Localização das Aldeias Seguras</h2></section>
+
+<div id="map"></div>
+<div id="map-legend" class="legend" aria-live="polite">
+  <div class="row"><span class="chip aldeia"></span> Aldeias</div>
+  <div class="row"><span class="chip road"></span> Rede viária</div>
+  <div class="row"><span class="chip build"></span> Edifícios</div>
+  <div class="row"><span class="chip ar"></span> Abrigos/Refúgios</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<section class="stats">
+  <div class="stat-box"><h3>🏘️ 2355</h3><p>Aglomerados em programa</p></div>
+  <div class="stat-box"><h3>🧑‍✈️ 2203</h3><p>Oficiais de Segurança Local</p></div>
+  <div class="stat-box"><h3>📢 999</h3><p>Planos de evacuação</p></div>
+  <div class="stat-box"><h3>🔥 428</h3><p>Simulacros realizados</p></div>
+  <div class="stat-box"><h3>🏠 1550</h3><p>Locais de abrigo</p></div>
+  <div class="stat-box"><h3>⛺ 1522</h3><p>Locais de refúgio</p></div>
+</section>
+
+<section class="fichas" id="fichas">
+  <h3>Fichas das Aldeias</h3>
+  <div id="fichasList"></div>
+</section>
+
+<section class="faq-wrap" id="faqs">
+  <h3>FAQs — Programa Aldeia Segura, Pessoas Seguras</h3>
+  <div class="accordion">
+    <details class="acc-item">
+      <summary class="acc-btn"><span>Quem é o Oficial de Segurança Local (OSL)?</span><b class="acc-icon"></b></summary>
+      <div class="acc-panel">
+        <p>O OSL é um elemento de proximidade com <strong>capacidade dinamizadora</strong> e <strong>conhecimento profundo do aglomerado</strong>, que atua como ponte entre Município/Junta e população. Apoia a execução do programa, mobiliza a comunidade e facilita a resposta local.</p>
+        <p>Principais funções: <strong>sensibilizar</strong> os habitantes, <strong>partilhar</strong> medidas de prevenção e atuação, <strong>emitir o alerta</strong> quando aplicável, <strong>orientar</strong> as ações de <strong>refúgio</strong> ou <strong>evacuação</strong> e <strong>assegurar a ligação</strong> às autoridades e agentes de proteção civil.</p>
+        <div class="faq-media"><img class="faq-img sm img-fb" data-srcs="AldeiasSeguras/Imagens/OFS.jpg,Imagens/OFS.jpg,OFS.jpg,OFS.JPG,Imagens/OFS.JPG,AldeiasSeguras/Imagens/OFS.JPG" alt="Oficial de Segurança Local"></div>
+      </div>
+    </details>
+
+    <details class="acc-item">
+      <summary class="acc-btn"><span>O que são Abrigo Coletivo e Refúgio Coletivo?</span><b class="acc-icon"></b></summary>
+      <div class="acc-panel">
+        <p>São espaços definidos para garantir um <strong>local seguro</strong> durante um incêndio. Os <strong>abrigos</strong> são <strong>fechados</strong> (salões, igrejas, escolas, pavilhões) com maior resistência ao fogo; os <strong>refúgios</strong> são <strong>abertos</strong> (campos de futebol, adros, praças) e afastados de combustíveis.</p>
+        <p>Podem existir um ou vários por aglomerado, conforme as características locais e demográficas. A sua divulgação e sinalização são essenciais.</p>
+        <div class="faq-media"><img class="faq-img img-fb" data-srcs="AldeiasSeguras/Imagens/AbrigoRefugio.jpg,Imagens/AbrigoRefugio.jpg,AbrigoRefugio.jpg,AldeiasSeguras/Imagens/AbrigoRefugio.JPG,Imagens/AbrigoRefugio.JPG,AbrigoRefugio.JPG,AldeiasSeguras/Imagens/AbrigosRefugios.jpg,Imagens/AbrigosRefugios.jpg,AbrigosRefugios.jpg" alt="Sinalização de Abrigo/Refúgio"></div>
+      </div>
+    </details>
+
+    <details class="acc-item">
+      <summary class="acc-btn"><span>Como é feito o aviso à população?</span><b class="acc-icon"></b></summary>
+      <div class="acc-panel"><p>O aviso usa vários meios em <strong>redundância</strong>: contacto porta-a-porta pelo OSL, megafones, sirenes locais, SMS de emergência e canais institucionais (município/junta). O objetivo é que a mensagem chegue a <strong>todas</strong> as pessoas, incluindo as mais vulneráveis.</p></div>
+    </details>
+
+    <details class="acc-item">
+      <summary class="acc-btn"><span>O que é o plano de evacuação?</span><b class="acc-icon"></b></summary>
+      <div class="acc-panel"><p>É um documento com o <strong>mapa do aglomerado</strong> e <strong>sinalética</strong> instalada nas vias públicas que indica os <strong>percursos a seguir</strong>, permitindo abandonar o aglomerado ou deslocar-se para os <strong>locais de abrigo</strong> ou <strong>refúgio</strong>. A retirada dos <strong>grupos vulneráveis</strong> (idosos, doentes, crianças) deve ser <strong>antecipada</strong> e articulada com as autoridades locais.</p></div>
+    </details>
+  </div>
+</section>
+
+<section class="emergency">
+  <h3>⚠️ Em caso de emergência ⚠️</h3>
+  <p>Ligue imediatamente <strong>112</strong>.</p>
+</section>
+
+<footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="main.js" defer></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/proj4@2.11.0/dist/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', function(){
+  // ---------- CONFIG ----------
+  var PATH_FREG = 'Shapfiles2/FreguesiasArcos.json';
+  var PATH_ALD  = 'Shapfiles2/AldeiasSeguras.json';
+  var PATH_REDE = 'AldeiasSeguras/Shapfiles2/RedeViaria.json';
+  var PATH_EDIF = 'AldeiasSeguras/Shapfiles2/Edificios.json';
+  var PATH_AR   = 'AldeiasSeguras/Shapfiles2/AbrigosRefugios.json';
+
+  // NOVO: Ocupação do Solo
+  var PATH_OCUP = 'Shapfiles/OcupacaoSolo.json';
+  var KEY_OCUP  = 'COS18n1_L';
+  var OCUP_COLORS = {
+    "Territórios artificializados": "#ff0000",
+    "Agricultura": "#ffff00",
+    "Pastagens": "#ff7f00",
+    "Florestas": "#006400",
+    "Matos": "#7fff00",
+    "Espaços descobertos ou com pouca vegetação": "#d9d9d9",
+    "Massas de água superficiais": "#0000ff"
+  };
+
+  let GJ_REDE=null, GJ_EDIF=null, GJ_AR=null, GJ_OCUP=null;
+
+  const DATA_ALDEIAS = [
+    { nome:'Ínsuas', freguesia:'Soajo', abrigos:null, refugios:null, exercicios:null, osl:'Sim', plano:'Não' },
+    { nome:'S. Sebastião de Cima', freguesia:'Cabreiro', abrigos:0, refugios:1, exercicios:0, osl:'Sim', plano:'Sim' },
+    { nome:'Vilar de Suente', freguesia:'Soajo', abrigos:1, refugios:1, exercicios:1, osl:'Sim', plano:'Sim' },
+    { nome:'Várzea', freguesia:'Soajo', abrigos:1, refugios:1, exercicios:1, osl:'Sim', plano:'Sim' },
+    { nome:'Campo Grande', freguesia:'Soajo', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' },
+    { nome:'Adrão', freguesia:'Soajo', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' },
+    { nome:'Paradela', freguesia:'Soajo', abrigos:1, refugios:1, exercicios:1, osl:'Sim', plano:'Sim' },
+    { nome:'Cunhas', freguesia:'Soajo', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' },
+    { nome:'Soutelo', freguesia:'Senharei', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' },
+    { nome:'São Mamede', freguesia:'Senharei', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' },
+    { nome:'Travassos', freguesia:'Senharei', abrigos:0, refugios:0, exercicios:0, osl:'Sim', plano:'Não' }
+  ];
+  function showToast(msg, type = 'error'){
+    var t=document.getElementById('toast'); if(!t) return;
+    t.textContent = msg;
+    t.className = 'toast'; // Reset
+    if (type === 'success') {
+      t.classList.add('success');
+    }
+    t.style.display = 'block';
+    clearTimeout(t._to);
+    t._to = setTimeout(function(){t.style.display='none';}, 5000);
+  }
+  if(!window.L){
+    document.getElementById('map').innerHTML='<div style="padding:1rem">Não foi possível carregar o Leaflet. Verifique a ligação à internet.</div>';
+    showToast('Erro a carregar o Leaflet.'); return;
+  }
+
+  /* Imagens com fallback */
+  function initImageFallbacks(){
+    document.querySelectorAll('img.img-fb').forEach(function(img){
+      var list=(img.getAttribute('data-srcs')||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      if(!list.length) return;
+      var i=0; function tryNext(){ if(i>=list.length){ img.alt=(img.alt||'')+' (imagem não disponível)'; return; } var url=list[i++]; img.onerror=tryNext; img.src=url; }
+      tryNext();
+    });
+  }
+  initImageFallbacks();
+
+  function slug(s){ s=(s||'').toString(); try{ s=s.normalize('NFD'); }catch(e){}; return s.replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/(^-|-$)/g,'').toLowerCase(); }
+  const DATA_BY_SLUG = {}; for(let i=0;i<DATA_ALDEIAS.length;i++){ DATA_BY_SLUG[ slug(DATA_ALDEIAS[i].nome) ] = DATA_ALDEIAS[i]; }
+  function prefer(o, keys, def){ if(def===void 0) def=''; if(!o) return def; for(var i=0;i<keys.length;i++){ var k=keys[i]; if(o[k]!=null && o[k]!=='' && o[k]!=='null') return o[k]; } return def; }
+
+  function smartFetchJSON(originalPath){
+    const candidates=[originalPath];
+    if(/^AldeiasSeguras\//.test(originalPath)) candidates.push(originalPath.replace(/^AldeiasSeguras\//,''));
+    candidates.push('./'+originalPath); candidates.push('../'+originalPath);
+    let lastErr=null;
+    return new Promise(resolve => {
+      (function tryOne(ix){
+        if(ix>=candidates.length){ if(lastErr){ console.error(lastErr); showToast('Falha a carregar '+originalPath); } return resolve(null); }
+        fetch(candidates[ix],{cache:'no-cache'})
+          .then(r => { if(r.ok) return r.json(); lastErr=new Error('HTTP '+r.status+' em '+candidates[ix]); throw lastErr; })
+          .then(json => resolve(json))
+          .catch(err => { lastErr=err; tryOne(ix+1); });
+      })(0);
+    });
+  }
+
+  if(window.proj4){
+    proj4.defs('EPSG:3763','+proj=tmerc +lat_0=39.66825833333333 +lon_0=-8.13310833333333 +k=1 +x_0=0 +y_0=0 +ellps=GRS80 +units=m +no_defs');
+  }
+  function looksProjected(gj){ let c=null; function pick(g){ if(!g) return; if(g.type==='Point') c=g.coordinates; else if(g.type==='MultiPoint'||g.type==='LineString') c=g.coordinates&&g.coordinates[0]; else if(g.type==='MultiLineString'||g.type==='Polygon') c=g.coordinates&&g.coordinates[0]&&g.coordinates[0][0]; else if(g.type==='MultiPolygon') c=g.coordinates&&g.coordinates[0]&&g.coordinates[0][0]&&g.coordinates[0][0][0]; else if(g.type==='GeometryCollection') return pick(g.geometries&&g.geometries[0]); }
+    pick(gj && (gj.type==='Feature'? gj.geometry : ((gj.features&&gj.features[0]&&gj.features[0].geometry)||gj))); return Array.isArray(c) && Math.abs(c[0])>180; }
+  function reprojectGeoJSON(gj,from,to){ from=from||'EPSG:3763'; to=to||'EPSG:4326'; if(!window.proj4) return gj;
+    function projPt(coord){ const p=proj4(from,to,coord); coord[0]=p[0]; coord[1]=p[1]; }
+    function walk(arr,d){ if(!arr) return; if(d===1){ for(let i=0;i<arr.length;i++) projPt(arr[i]); } else { for(let j=0;j<arr.length;j++) walk(arr[j], d-1); } }
+    function handle(g){ if(!g) return; switch(g.type){ case 'Point': projPt(g.coordinates); break; case 'MultiPoint': case 'LineString': walk(g.coordinates,1); break; case 'MultiLineString': case 'Polygon': walk(g.coordinates,2); break; case 'MultiPolygon': walk(g.coordinates,3); break; case 'GeometryCollection': for(let k=0;k<g.geometries.length;k++) handle(g.geometries[k]); break; } }
+    if(gj && gj.type==='FeatureCollection'){ for(let i=0;i<gj.features.length;i++) handle(gj.features[i].geometry); }
+    else if(gj && gj.type==='Feature') handle(gj.geometry); else if(gj) handle(gj);
+    if(gj && gj.crs) try{ delete gj.crs; }catch(e){}
+    return gj;
+  }
+
+  function openFichaById(id){
+    var det=document.getElementById(id); if(!det) return;
+    if(!det.open){ det.setAttribute('open',''); det.open=true; }
+    det.scrollIntoView({behavior:'smooth', block:'start'});
+    if(!det.open){ var sm=det.querySelector('summary'); if(sm) sm.click(); }
+    det.classList.add('pulse'); setTimeout(function(){ det.classList.remove('pulse'); }, 1200);
+  }
+  function openFromHash(){ if(location.hash && /^#aldeia-/.test(location.hash)) openFichaById(location.hash.slice(1)); }
+  window.addEventListener('hashchange', openFromHash);
+
+  // -------- MAPA PRINCIPAL --------
+  const map = L.map('map').setView([41.9,-8.4],10);
+  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+
+  map.on('popupopen', e => {
+    const el = e.popup && e.popup.getElement && e.popup.getElement();
+    if(!el) return;
+    el.addEventListener('click', ev => {
+      const lk = ev.target.closest && ev.target.closest('a.open-ficha[href^="#"]');
+      if(lk){ ev.preventDefault(); openFichaById(lk.getAttribute('href').slice(1)); }
+    });
+  });
+
+  let layerFreg, layerAldeias, layerRede, layerEdif, layerAR;
+  const aldeiaIndex = {};
+
+  // Freguesias
+  const pF = smartFetchJSON(PATH_FREG).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    layerFreg = L.geoJSON(gj,{
+      style:{ color:'#1f78b4', weight:2, fillOpacity:0.05 },
+      onEachFeature:(f,l) => {
+        const P=f.properties||{}; const freg=prefer(P,['Freguesia','Nome_Freg','NOME_FREG'],'(sem nome)'); const conc=prefer(P,['Concelho','Municipio','Município','MUNICIPIO'],''); const dist=prefer(P,['Distrito','DISTRICT'],'');
+        let areaHa = prefer(P,['Area_ha','AreaHa','AREA_HA','Area_Ha','HA'],'');
+        try{ if(!areaHa && window.turf){ const a=turf.area(f); areaHa=(a/10000).toFixed(2); } }catch(e){}
+        const html = '<b>Freguesia:</b> '+freg+'<br>'+(conc?'<b>Concelho:</b> '+conc+'<br>':'')+(dist?'<b>Distrito:</b> '+dist+'<br>':'')+(areaHa?'<b>Área:</b> '+areaHa+' ha':'');
+        l.bindPopup(html);
+        l.on('mouseover',() => l.setStyle({weight:3, fillOpacity:0.12}));
+        l.on('mouseout', () => l.setStyle({weight:2, fillOpacity:0.05}));
+      }
+    }).addTo(map);
+    return layerFreg;
+  });
+
+  // ---------- Comentários/Problemas: utilitários ----------
+  function commentsKey(fid){ return 'aldeia-comments:'+fid; }
+  function loadComments(fid){ try{ return JSON.parse(localStorage.getItem(commentsKey(fid))||'[]'); }catch(_){ return []; } }
+  function saveComments(fid, arr){ localStorage.setItem(commentsKey(fid), JSON.stringify(arr)); }
+  function renderComments(fid, filter){
+    const wrap = document.getElementById(fid+'-comments');
+    if(!wrap) return;
+    var data = loadComments(fid);
+    if(filter && filter!=='all') data = data.filter(it => (it.status||'pendente')===filter);
+    if(!data.length){
+      wrap.innerHTML = '<p class="small muted">Ainda sem comentários.</p>';
+      return;
+    }
+    data.sort((a,b) => (b.created||0) - (a.created||0));
+    wrap.innerHTML = data.map(it => {
+      const dt = new Date(it.created||Date.now());
+      const ds = dt.toLocaleString();
+      const foto = it.foto ? ('<div class="comment-meta"><a href="'+it.foto+'" target="_blank" rel="noopener">Ver foto</a></div>') : '';
+      const st = (it.status||'pendente');
+      return '<div class="comment-item" data-cid="'+it.id+'">\
+        <div class="comment-head">\
+          <div>\
+            <span class="badge cat">'+(it.cat||'Outro')+'</span>\
+            <span class="badge sev">Gravidade: '+(it.sev||'Média')+'</span>\
+            <span class="badge status '+(st==='resolvido'?'res':'')+'">'+(st==='resolvido'?'Resolvido':'Pendente')+'</span>\
+          </div>\
+          <div class="comment-actions">\
+            <button class="btn" data-cmd="toggle" data-fid="'+fid+'" data-id="'+it.id+'">'+(st==='resolvido'?'Marcar pendente':'Marcar resolvido')+'</button>\
+            <button class="btn" data-cmd="edit" data-fid="'+fid+'" data-id="'+it.id+'">Editar</button>\
+            <button class="btn" data-cmd="delete" data-fid="'+fid+'" data-id="'+it.id+'">Remover</button>\
+          </div>\
+        </div>\
+        <div class="comment-body">'+(it.text||'')+'</div>\
+        <div class="comment-meta">Localização: '+(it.loc||'—')+' · <span title="'+ds+'">'+ds+'</span></div>\
+        '+foto+'\
+      </div>';
+    }).join('');
+  }
+
+  // ---- SUBMISSÃO: Supabase ----
+  // Valores do teu projeto
+  const SUPA_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+  const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+
+  const API_INFO     = `/rest/v1/ficha_info`;
+  const API_COMMENTS = `/rest/v1/ficha_comments`;
+
+  // Única função de POST
+  function tryPostJSON(url, payload){
+    return fetch(SUPA_URL + url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPA_ANON,
+        Authorization: `Bearer ${SUPA_ANON}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  function getTableData(tblSel){
+    const container = document.querySelector(tblSel);
+    if (!container) return [];
+    const headerDiv = container.querySelector('.form-grid-header');
+    if (!headerDiv) return [];
+
+    const headers = Array.from(headerDiv.children).map(span => span.textContent.trim()).filter(Boolean);
+    const rows = Array.from(container.querySelectorAll('.form-grid-body > .form-grid-row'));
+
+    return rows.map(rowDiv => {
+      const obj = {};
+      const cells = Array.from(rowDiv.children);
+      cells.forEach((child, i) => {
+        if (i >= headers.length) return;
+        const key = headers[i];
+        const el = child.matches('input, select, textarea') ? child : child.querySelector('input, select, textarea');
+        let val = '';
+        if(el) val = (el.type==='number' ? (el.value===''?null:+el.value) : el.value);
+        if(typeof val === 'string') val = val.trim();
+        obj[key] = val;
+      });
+      return obj;
+    }).filter(row => {
+      return Object.values(row).some(v => (v!=='' && v!==null && typeof v!=='undefined'));
+    });
+  }
+
+  async function collectInputs(container) {
+    const out = [];
+    if (!container) return out;
+
+    const elements = Array.from(container.querySelectorAll('input, select, textarea'));
+
+    for (const el of elements) {
+      let label = '';
+      // 1. Check for an associated <label for="...">
+      if (el.id) {
+        const lblFor = container.querySelector(`label[for="${el.id}"]`);
+        if (lblFor) label = lblFor.textContent.trim();
+      }
+      // 2. Check if the element is wrapped in a <label>
+      if (!label) {
+        const parentLabel = el.closest('label');
+        if (parentLabel) {
+          const clone = parentLabel.cloneNode(true);
+          const innerEl = clone.querySelector(el.tagName);
+          if (innerEl) innerEl.remove();
+          label = clone.textContent.trim();
+        }
+      }
+      // 3. Check for a preceding <label> sibling
+      if (!label) {
+        const prev = el.previousElementSibling;
+        if (prev && prev.tagName === 'LABEL') label = prev.textContent.trim();
+      }
+      // 4. Fallback to placeholder
+      if (!label && el.placeholder) label = el.placeholder.trim();
+
+      let value;
+      if (el.type === 'file' && el.files && el.files.length > 0) {
+        const file = el.files[0];
+        value = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result); // Retorna base64
+          reader.readAsDataURL(file);
+        });
+      } else {
+        value = (el.value || '').trim();
+      }
+
+      out.push({ label: label || el.name || `(sem label: ${el.type})`, value: value });
+    }
+    return out;
+  }
+
+  async function buildInfoPayload(fid){
+    var fichaEl = document.getElementById(fid);
+    if(!fichaEl) return null;
+    const nome = fichaEl.querySelector('.sum-title') ? fichaEl.querySelector('.sum-title').textContent.trim() : '';
+
+    const pop  = getTableData('#'+fid+'-pop-grid');
+    const osl  = getTableData('#'+fid+'-osl-grid');
+    const prev = getTableData('#'+fid+'-prev-grid');
+    const sim  = getTableData('#'+fid+'-sim-grid');
+
+    // caixas com inputs
+    var infoBoxes = Array.from(fichaEl.querySelectorAll('.info-comments details:nth-child(1) > .box'));
+    let inputsCollected = [];
+    for (var i=0; i<infoBoxes.length; i++) {
+        var collected = await collectInputs(infoBoxes[i]);
+        inputsCollected = inputsCollected.concat(collected);
+    }
+
+    const tags = Array.from(fichaEl.querySelectorAll('.sum-tag')).map(function(t){return t.textContent.trim();});
+
+    return {
+      aldeiaId: fid,
+      aldeiaNome: nome,
+      metaTags: tags,
+      tabelas: { populacao: pop, oficiais: osl, prevencao: prev, simulacros: sim },
+      campos: inputsCollected,
+      submittedAt: new Date().toISOString()
+    };
+  }
+
+  function fallbackDownload(filename, obj){
+    var blob = new Blob([ JSON.stringify(obj, null, 2) ], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  // Fichas (mini-mapas)
+  const fichasList = document.getElementById('fichasList');
+  const MINI_REG = [];
+  const io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(!entry.isIntersecting) return; var el=entry.target; if(el.dataset.done) return; el.dataset.done='1';
+      var lat=parseFloat(el.dataset.lat), lng=parseFloat(el.dataset.lng);
+      var mm=L.map(el,{attributionControl:false,zoomControl:false}).setView([lat,lng],16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(mm);
+      L.circle([lat,lng], {radius:3, color:'#ff6f00', weight:3}).addTo(mm);
+      var circlePoly=null; try{ if(window.turf){ circlePoly=turf.circle([lng,lat],0.1,{steps:64,units:'kilometers'}); L.geoJSON(circlePoly,{style:{color:'#3a7d44',weight:1,fillOpacity:0.05}}).addTo(mm);} else { L.circle([lat,lng],{radius:100,color:'#3a7d44',weight:1,fillOpacity:0.05}).addTo(mm);} }catch(e){}
+      MINI_REG.push({map:mm,lat:lat,lng:lng,circlePoly:circlePoly, el:el, layers:{}});
+      tryRenderMiniLayers();
+      setTimeout(function(){ mm.invalidateSize(); },50);
+    });
+  },{threshold:0.2});
+
+  function formRowPopTpl(){
+    return '<div class="form-grid-row pop-grid">\
+      <input type="text" placeholder="Casa"/>\
+      <input type="number" min="0" step="1" placeholder="Nº" oninput="this.value = this.value.replace(/[^0-9]/g, \'\');"/>\
+      <input type="number" min="0" max="130" step="1" placeholder="Idade" oninput="this.value = this.value.replace(/[^0-9]/g, \'\');"/>\
+      <input type="text" placeholder="Incapacidades"/>\
+      <input type="text" placeholder="Observações"/>\
+      <button class="btn" data-del-row>Remover</button>\
+    </div>';
+  }
+  function formRowOSLTpl(){
+    return '<div class="form-grid-row osl-grid">\
+      <input type="text" placeholder="Nome do OSL"/>\
+      <input type="text" placeholder="Contacto"/>\
+      <button class="btn" data-del-row>Remover</button>\
+    </div>';
+  }
+  function formRowPrevTpl(){
+    return '<div class="form-grid-row prev-grid">\
+      <input type="date"/>\
+      <select>\
+        <option>GNR</option><option>ICNF</option><option>ANEPC</option><option>Município</option><option>Outro</option>\
+      </select>\
+      <input type="number" min="0" step="1" placeholder="Nº" oninput="this.value = this.value.replace(/[^0-9]/g, \'\');"/>\
+      <input type="text" placeholder="Faixas GFC"/>\
+      <button class="btn" data-del-row>Remover</button>\
+    </div>';
+  }
+  function formRowSimTpl(){
+    return '<div class="form-grid-row sim-grid">\
+      <input type="date"/>\
+      <textarea placeholder="Lições aprendidas"></textarea>\
+      <input type="number" min="0" step="1" placeholder="Participantes" oninput="this.value = this.value.replace(/[^0-9]/g, \'\');"/>\
+      <button class="btn" data-del-row>Remover</button>\
+    </div>';
+  }
+
+  function createFicha(info){
+    const {id,nome,distrito,concelho,freguesia,lat,lng,foto,abrigos,refugios,exercicios,osl,plano,distBombeirosKm} = info;
+    const el=document.createElement('details'); el.className='ficha'; el.id=id;
+    el.innerHTML='\
+      <summary class="ficha-summary">\
+        <div class="sum-left">\
+          <span class="sum-title">'+nome+'</span>\
+          '+(distrito?'<span class="sum-tag">Distrito: '+distrito+'</span>':'')+'\
+          '+(concelho?'<span class="sum-tag">Concelho: '+concelho+'</span>':'')+'\
+          '+(freguesia?'<span class="sum-tag">Freguesia: '+freguesia+'</span>':'')+'\
+          '+(abrigos!=null?'<span class="sum-tag">Abrigos: '+abrigos+'</span>':'')+'\
+          '+(refugios!=null?'<span class="sum-tag">Refúgios: '+refugios+'</span>':'')+'\
+          '+(exercicios!=null?'<span class="sum-tag">Exercícios: '+exercicios+'</span>':'')+'\
+          '+(osl?'<span class="sum-tag">OSL: '+osl+'</span>':'')+'\
+          '+(plano?'<span class="sum-tag">Plano: '+plano+'</span>':'')+'\
+          '+(distBombeirosKm?'<span class="sum-tag">Bombeiros: '+distBombeirosKm+'</span>':'')+'\
+        </div>\
+        <div class="sum-actions">\
+          <button class="btn map" data-goto="'+id+'">Ver no mapa</button>\
+        </div>\
+      </summary>\
+      <div class="ficha-inner">\
+        <div class="grid">\
+          <div class="box">\
+            <h5>Dados oficiais (só leitura)</h5>\
+            <div class="meta">\
+              '+(abrigos!=null?'<div><b>Abrigos (n.º):</b> '+abrigos+'</div>':'')+'\
+              '+(refugios!=null?'<div><b>Refúgios (n.º):</b> '+refugios+'</div>':'')+'\
+              '+(exercicios!=null?'<div><b>Exercícios:</b> '+exercicios+'</div>':'')+'\
+              '+(osl?'<div><b>Oficial de Segurança:</b> '+osl+'</div>':'')+'\
+              '+(plano?'<div><b>Plano de evacuação:</b> '+plano+'</div>':'')+'\
+              '+(distBombeirosKm?'<div><b>Distância aos Bombeiros:</b> '+distBombeirosKm+'</div>':'')+'\
+            </div>\
+            '+(foto?'<img class="aldeia-photo" src="'+foto+'" alt="Foto de '+nome+'" onerror="this.style.display=\'none\'">':'<img class="aldeia-photo" src="Imagens/Aldeias/'+id.replace('aldeia-','')+'.jpg" alt="Foto de '+nome+'" onerror="this.style.display=\'none\'">')+'\
+          </div>\
+          <div class="box">\
+            <h5>Mapa de localização (buffer 100 m)</h5>\
+            <div class="mini-controls">\
+              <label><input type="checkbox" data-mini-layer="ocup" checked> Ocup. do solo</label>\
+              <label><input type="checkbox" data-mini-layer="rede" checked> Rede viária</label>\
+              <label><input type="checkbox" data-mini-layer="edif" checked> Edifícios</label>\
+              <label><input type="checkbox" data-mini-layer="ar" checked> Abrigos/Refúgios</label>\
+            </div>\
+            <div class="mini-map" data-lat="'+lat+'" data-lng="'+lng+'"></div>\
+            <p class="small muted" style="margin:.5rem 0 0;">Mostra camadas dentro do buffer de 100 m. Pode ligar/desligar em cima.</p>\
+          </div>\
+        </div>\
+        <div class="info-comments">\
+          <!-- ESQUERDA: Adicionar informação -->\
+          <details>\
+            <summary class="btn">Adicionar informação</summary>\
+            <div class="box">\
+              <h5>Caracterização da população residente</h5>\
+              <div class="form-grid" id="'+id+'-pop-grid">\
+                <div class="form-grid-header pop-grid"><span>Casa</span><span>Número</span><span>Idade</span><span>Incapacidades</span><span>Observações</span></div>\
+                <div class="form-grid-body">'+formRowPopTpl()+formRowPopTpl()+'</div>\
+              </div>\
+              <div class="controls">\
+                <button class="btn" data-add-row="#'+id+'-pop-grid .form-grid-body" data-template="pop">Adicionar linha</button>\
+              </div>\
+              <div class="box" style="margin-top:1rem;">\
+                <h5>Oficiais de Segurança</h5>\
+                <div class="form-grid" id="'+id+'-osl-grid">\
+                  <div class="form-grid-header osl-grid"><span>Nome</span><span>Contacto</span></div>\
+                  <div class="form-grid-body">'+formRowOSLTpl()+'</div>\
+                </div>\
+                <div class="controls"><button class="btn" data-add-row="#'+id+'-osl-grid .form-grid-body" data-template="osl">Adicionar oficial</button></div>\
+              </div>\
+              <div class="box" style="margin-top:1rem;">\
+                <h5>Prevenção (sensibilização / GFC)</h5>\
+                <div class="form-grid" id="'+id+'-prev-grid">\
+                  <div class="form-grid-header prev-grid"><span>Data</span><span>Organizador</span><span>Participantes</span><span>Faixas GFC</span></div>\
+                  <div class="form-grid-body">'+formRowPrevTpl()+'</div>\
+                </div>\
+                <div class="controls"><button class="btn" data-add-row="#'+id+'-prev-grid .form-grid-body" data-template="prev">Adicionar ação</button></div>\
+              </div>\
+              <div class="box" style="margin-top:.6rem;">\
+                <h5>Preparação e resposta</h5>\
+                <div class="row">\
+                  <div>\
+                    <label><b>Abrigo:</b> <select><option>SIM</option><option>NÃO</option></select></label>\
+                    <label>Localização (coords)</label><input type="text" placeholder="Lat, Lon" />\
+                    <label>Foto do Abrigo</label><input type="file" accept="image/*" />\
+                    <label>Privado/Público</label><input type="text" placeholder="Privado / Público">\
+                    <label>Observações</label><textarea placeholder="Notas sobre abrigo"></textarea>\
+                  </div>\
+                  <div>\
+                    <label><b>Refúgio:</b> <select><option>SIM</option><option>NÃO</option></select></label>\
+                    <label>Localização (coords)</label><input type="text" placeholder="Lat, Lon" />\
+                    <label>Foto do Refúgio</label><input type="file" accept="image/*" />\
+                    <label>Privado/Público</label><input type="text" placeholder="Privado / Público">\
+                    <label>Observações</label><textarea placeholder="Notas sobre refúgio"></textarea>\
+                  </div>\
+                </div>\
+                <div class="row">\
+                  <div>\
+                    <label><b>Plano de evacuação:</b> <select><option>SIM</option><option>NÃO</option></select></label>\
+                    <label>Ficheiro do plano</label><input type="file" accept=".pdf,.doc,.docx,image/*" />\
+                  </div>\
+                  <div>\
+                    <label><b>Simulacros</b></label>\
+                    <div class="form-grid" id="'+id+'-sim-grid">\
+                      <div class="form-grid-header sim-grid"><span>Data</span><span>Lições aprendidas</span><span>Participantes nº</span></div>\
+                      <div class="form-grid-body">'+formRowSimTpl()+'</div>\
+                    </div>\
+                    <div class="controls"><button class="btn" data-add-row="#'+id+'-sim-grid .form-grid-body" data-template="sim">Adicionar simulacro</button></div>\
+                  </div>\
+                </div>\
+              </div>\
+              <div class="box" style="margin-top:.6rem;">\
+                <h5>Outras medidas</h5>\
+                <div class="row">\
+                  <div><label>Data</label><input type="date"></div>\
+                  <div><label>Observações</label><textarea placeholder="Observações gerais"></textarea></div>\
+                </div>\
+              </div>\
+              <div class="comment-actions">\
+                <button class="btn" data-submit-info="'+id+'">Submeter informação</button>\
+              </div>\
+            </div>\
+          </details>\
+          <!-- DIREITA: Comentários / Problemas -->\
+          <details class="comments-wrap">\
+            <summary class="btn">Comentários / Problemas</summary>\
+            <div class="box">\
+              <p class="small muted">Reporte problemas locais (ex.: sinalização partida, falta de limpeza, vegetação a invadir caminhos, iluminação avariada). Os dados são enviados para o servidor ao clicar em "Submeter comentários".</p>\
+              <div class="comment-form">\
+                <div class="row">\
+                  <div>\
+                    <label>Categoria</label>\
+                    <select id="'+id+'-c-cat">\
+                      <option>Sinalização</option><option>Limpeza</option><option>Vegetação</option><option>Iluminação</option><option>Rede viária</option><option>Segurança</option><option>Outro</option>\
+                    </select>\
+                  </div>\
+                  <div>\
+                    <label>Gravidade</label>\
+                    <select id="'+id+'-c-sev">\
+                      <option>Baixa</option><option>Média</option><option>Alta</option>\
+                    </select>\
+                  </div>\
+                </div>\
+                <label>Descrição</label>\
+                <textarea id="'+id+'-c-text" placeholder="Explica o problema…" required></textarea>\
+                <div class="row">\
+                  <div><label>Localização (coords ou texto)</label><input id="'+id+'-c-loc" type="text" placeholder="Ex.: 41.90, -8.40 ou \'Rua Principal\'" /></div>\
+                  <div><label>Foto (opcional)</label><input id="'+id+'-c-foto" type="file" accept="image/*" /></div>\
+                </div>\
+                <div class="comment-actions">\
+                  <button class="btn" data-add-comment="'+id+'">Adicionar comentário</button>\
+                  <button class="btn" data-submit-comments="'+id+'">Submeter comentários</button>\
+                  <button class="btn" data-export-comments="'+id+'">Exportar JSON</button>\
+                  <label class="btn" style="cursor:pointer;">\
+                    Importar JSON\
+                    <input type="file" accept="application/json" data-import-comments="'+id+'" style="display:none">\
+                  </label>\
+                </div>\
+              </div>\
+              <div class="filters" style="margin:.5rem 0;">\
+                <button class="btn active" data-comments-filter="'+id+'" data-val="all">Todos</button>\
+                <button class="btn" data-comments-filter="'+id+'" data-val="pendente">Pendentes</button>\
+                <button class="btn" data-comments-filter="'+id+'" data-val="resolvido">Resolvidos</button>\
+              </div>\
+              <div id="'+id+'-comments"></div>\
+            </div>\
+          </details>\
+        </div>\
+      </div>';
+    fichasList.appendChild(el);
+    const mini=el.querySelector('.mini-map'); io.observe(mini);
+    renderComments(id, 'all');
+  }
+
+  // Aldeias
+  const pA = smartFetchJSON(PATH_ALD).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    layerAldeias = L.geoJSON(gj,{
+      pointToLayer:(feat,latlng) => L.circleMarker(latlng,{ radius:6, color:'#fff', weight:1, fillColor:'#ff6f00', fillOpacity:0.95 }),
+      onEachFeature:(f,l) => {
+        const P=f.properties||{}; const nome=prefer(P,['Nome','Aldeia','Nome_Aldeia','NOME','DESIG','DESIGNACAO'],'(sem nome)'); const nomeSlug=slug(nome); const ref=DATA_BY_SLUG[nomeSlug]||{}; const freg=prefer(P,['Freguesia','freguesia'], ref.freguesia||''); const conc=prefer(P,['Concelho','Municipio','Município'],''); const dist=prefer(P,['Distrito'],'');
+        let lat,lng; if(f.geometry && f.geometry.type==='Point'){ lng=+f.geometry.coordinates[0]; lat=+f.geometry.coordinates[1]; } else { const ll=l.getLatLng(); lat=ll.lat; lng=ll.lng; }
+        const id='aldeia-'+nomeSlug; aldeiaIndex[id]={layer:l,lat:lat,lng:lng};
+        createFicha({
+          id:id, nome:nome, distrito:dist, concelho:conc, freguesia:freg, lat:lat, lng:lng, foto:P.Foto||null,
+          abrigos:(P.Abrigos!=null?P.Abrigos:(ref.abrigos!=null?ref.abrigos:null)),
+          refugios:(P.Refugios!=null?P.Refugios:(ref.refugios!=null?ref.refugios:null)),
+          exercicios:(P.Exercicios!=null?P.Exercicios:(ref.exercicios!=null?ref.exercicios:null)),
+          osl:(P.OSL!=null?P.OSL:(ref.osl!=null?ref.osl:null)),
+          plano:(P.Plano!=null?P.Plano:(ref.plano!=null?ref.plano:null)),
+          distBombeirosKm:null
+        });
+        const html='<div style="font-size:.95rem">'+
+          '<b>Nome da aldeia:</b> '+nome+'<br>'+
+          (dist?'<b>Distrito:</b> '+dist+'<br>':'')+(conc?'<b>Concelho:</b> '+conc+'<br>':'')+(freg?'<b>Freguesia:</b> '+freg+'<br>':'')+
+          '<b>Latitude:</b> '+lat.toFixed(5)+' <b>Longitude:</b> '+lng.toFixed(5)+'<br>'+
+          '<a href="#'+id+'" class="btn open-ficha" style="margin-top:.4rem;display:inline-block">Ver ficha</a>'+
+          '</div>';
+        l.bindPopup(html);
+        l.bindTooltip(nome,{direction:'top',offset:[0,-10],opacity:0.9});
+      }
+    }).addTo(map);
+    return layerAldeias;
+  });
+
+  // Rede VIÁRIA
+  const pRede = smartFetchJSON(PATH_REDE).then(gj => {
+    if(!gj) return null; GJ_REDE=gj; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    layerRede = L.geoJSON(gj,{
+      style:f => { const P=f.properties||{}; const classe=(prefer(P,['classe','CLASSE','tipo','TIPO','Categoria'],'')+'').toLowerCase(); const w=(classe.indexOf('principal')>-1||classe.indexOf('nacional')>-1)?3:(classe.indexOf('municipal')>-1?2:1.5); return { color:'#777', weight:w, opacity:0.9 }; },
+      onEachFeature:(f,l) => { const P=f.properties||{}; const nome=prefer(P,['nome','NOME','Designacao','DESIG','via','road'],'Via'); const classe=prefer(P,['classe','CLASSE','tipo','TIPO','Categoria'],''); l.bindTooltip(nome+(classe?' — '+classe:''),{sticky:true}); }
+    });
+    return layerRede;
+  });
+
+  // Edifícios
+  const pEdif = smartFetchJSON(PATH_EDIF).then(gj => {
+    if(!gj) return null; GJ_EDIF=gj; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    layerEdif = L.geoJSON(gj,{ style:() => ({ color:'#c2185b', weight:0.8, fillColor:'#ff69b4', fillOpacity:0.35 }),
+      onEachFeature:(f,l) => { const P=f.properties||{}; const id=prefer(P,['id','ID','ident','IDENT'],'Edifício'); const uso=prefer(P,['uso','USO','funcao','FUNCAO','tipo','TIPO'],''); const pisos=prefer(P,['pisos','PISOS','n_pisos','NPISOS'],''); l.bindPopup('<b>'+id+'</b>'+(uso?'<br><b>Uso:</b> '+uso:'')+(pisos?'<br><b>Pisos:</b> '+pisos:'')); l.on('mouseover',() => l.setStyle({weight:1.1, fillOpacity:0.5})); l.on('mouseout',() => l.setStyle({weight:0.8})); }
+    });
+    return layerEdif;
+  });
+
+  // Abrigos/Refúgios
+  const pAR = smartFetchJSON(PATH_AR).then(gj => {
+    if(!gj) return null; GJ_AR=gj; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    const stylePoly={color:'#d32f2f', weight:2, fillOpacity:0.15};
+    const pointTo = (f,latlng) => L.circleMarker(latlng,{radius:6,color:'#fff',weight:1,fillColor:'#d32f2f',fillOpacity:0.95});
+    const asGeo=(gj && gj.type==='FeatureCollection')? gj : {type:'FeatureCollection', features:(gj && gj.features)||[]};
+    layerAR = L.geoJSON(asGeo,{ pointToLayer:pointTo, style:() => stylePoly,
+      onEachFeature:(f,l) => { const P=f.properties||{}; const nome=prefer(P,['Nome','Designacao','DESIG','NOME'],'Abrigo/Refúgio'); const extra=prefer(P,['Cap','capacidade','Capacidade','Pavimento','Material','Tipo','Notas','OBS'],''); l.bindPopup('<b>'+nome+'</b>'+(extra?'<br>'+extra:'')); l.bindTooltip(nome,{direction:'top'}); }
+    });
+    return layerAR;
+  });
+
+  // Ocupação do solo (mini-mapas)
+  const pOcup = smartFetchJSON(PATH_OCUP).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    GJ_OCUP = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
+    return GJ_OCUP;
+  });
+
+  // Controlos do mapa principal
+  Promise.all([pF,pA,pRede,pEdif,pAR,pOcup]).then(() => {
+    const overlays = {};
+    if(layerFreg) overlays['Freguesias']=layerFreg;
+    if(layerAldeias) overlays['Aldeias']=layerAldeias;
+    if(layerRede) overlays['Rede viária']=layerRede;
+    if(layerEdif) overlays['Edifícios']=layerEdif;
+    if(layerAR) overlays['Abrigos/Refúgios']=layerAR;
+    L.control.layers(null, overlays, { collapsed:false }).addTo(map);
+    if(layerFreg) layerFreg.addTo(map);
+    if(layerAldeias) layerAldeias.addTo(map);
+    if(layerRede) layerRede.addTo(map);
+    if(layerAR) layerAR.addTo(map);
+    try{ if(layerFreg) map.fitBounds(layerFreg.getBounds(), {padding:[20,20]}); }catch(e){}
+    tryRenderMiniLayers();
+    openFromHash();
+  });
+
+  // Delegações (fichas) — mapa e tabelas
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('button.btn.map[data-goto]');
+    if(btn){ var id=btn.getAttribute('data-goto'); var rec=aldeiaIndex[id]; if(rec){ map.setView([rec.lat,rec.lng],15,{animate:true}); try{ rec.layer.openPopup(); }catch(err){} } }
+
+    var openLk = e.target.closest && e.target.closest('a.open-ficha[href^="#"]');
+    if(openLk){ e.preventDefault(); var targetId = openLk.getAttribute('href').slice(1); var det = document.getElementById(targetId); if(det){ det.open = true; det.scrollIntoView({behavior:'smooth', block:'start'}); det.classList.add('pulse'); setTimeout(function(){ det.classList.remove('pulse'); }, 1200); } }
+
+    // Adicionar linha a tabelas
+    var addBtn=e.target.closest && e.target.closest('button[data-add-row]');
+    if(addBtn){
+      var containerSel = addBtn.getAttribute('data-add-row');
+      var kind   = addBtn.getAttribute('data-template');
+      var container=document.querySelector(containerSel);
+      if(container){
+        var html = (kind==='pop')? formRowPopTpl() : (kind==='osl')? formRowOSLTpl() : (kind==='prev')? formRowPrevTpl() : formRowSimTpl();
+        var div = document.createElement('div'); div.innerHTML = html;
+        container.appendChild(div.firstChild);
+      }
+    }
+
+    // Remover linha
+    var delBtn = e.target.closest && e.target.closest('button[data-del-row]');
+    if(delBtn){
+      var row = delBtn.closest('.form-grid-row');
+      if(row && row.parentElement.children.length > 1){ row.parentElement.removeChild(row); }
+      else{ showToast('Mantive a última linha para não ficares sem a estrutura.', 'success'); }
+    }
+  });
+
+  // Ligar/desligar camadas do mini-mapa
+  document.addEventListener('change', e => {
+    const cb = e.target.closest && e.target.closest('input[data-mini-layer]');
+    if(!cb) return;
+    const box = cb.closest('.box'); if(!box) return;
+    const miniEl = box.querySelector('.mini-map'); if(!miniEl) return;
+    const rec = MINI_REG.find(r => r.el===miniEl);
+    if(!rec || !rec.layers) return;
+    const key = cb.getAttribute('data-mini-layer');
+    const lyr = rec.layers[key];
+    if(!lyr) return;
+    if(cb.checked){ try{ lyr.addTo(rec.map); }catch(_){} }
+    else{ try{ rec.map.removeLayer(lyr); }catch(_){} }
+  });
+
+  // Mini-map drawing (interseção com buffer)
+  function tryRenderMiniLayers(){
+    if(!(window.turf)) return;
+    if(!(GJ_REDE||GJ_EDIF||GJ_AR||GJ_OCUP)) return;
+
+    function intersectFC(gj,circlePoly){
+      if(!gj||!circlePoly) return null;
+      const fc=(gj.type==='FeatureCollection')?gj:{type:'FeatureCollection',features:(gj.features||[])};
+      const out=[];
+      fc.features.forEach(f => {
+        try{
+          if(!f||!f.geometry) return;
+          const fb=turf.bbox(f); const cb=turf.bbox(circlePoly);
+          const overlap=!(fb[0]>cb[2]||fb[2]<cb[0]||fb[1]>cb[3]||fb[3]<cb[1]);
+          if(!overlap) return;
+          if(turf.booleanIntersects(f,circlePoly)) out.push(f);
+        }catch(e){}
+      });
+      return {type:'FeatureCollection',features:out};
+    }
+
+    MINI_REG.forEach(rec => {
+      if(rec._drawn) return;
+      const mm=rec.map, circlePoly=rec.circlePoly; if(!mm||!circlePoly) return;
+
+      rec.layers = rec.layers || {};
+
+      if(GJ_OCUP){
+        const fco = intersectFC(GJ_OCUP, circlePoly);
+        if(fco && fco.features.length){
+          rec.layers.ocup = L.geoJSON(fco, {
+            style:feat => {
+              const cat = String((feat.properties && feat.properties[KEY_OCUP]) || 'Sem classe');
+              const clr = OCUP_COLORS[cat] || '#cccccc';
+              return { stroke:false, fillColor: clr, fillOpacity:.5 };
+            },
+            onEachFeature:(f,l) => {
+              const cat = (f.properties && f.properties[KEY_OCUP]) || 'Sem classe';
+              l.bindTooltip(cat,{sticky:true, opacity:.85});
+            }
+          });
+        }
+      }
+
+      if(GJ_EDIF){
+        const fc1=intersectFC(GJ_EDIF,circlePoly);
+        if(fc1 && fc1.features.length) rec.layers.edif = L.geoJSON(fc1,{ style:{color:'#c2185b', weight:0.8, fillColor:'#ff69b4', fillOpacity:0.35} });
+      }
+      if(GJ_REDE){
+        const fc2=intersectFC(GJ_REDE,circlePoly);
+        if(fc2 && fc2.features.length) rec.layers.rede = L.geoJSON(fc2,{ style:{color:'#777', weight:2, opacity:0.9} });
+      }
+      if(GJ_AR){
+        const fc3=intersectFC(GJ_AR,circlePoly);
+        if(fc3 && fc3.features.length) rec.layers.ar = L.geoJSON(fc3,{
+          pointToLayer:(f,latlng) => L.circleMarker(latlng,{radius:5,color:'#fff',weight:1,fillColor:'#d32f2f',fillOpacity:0.95}),
+          style:{color:'#d32f2f', weight:2, fillOpacity:0.15}
+        });
+      }
+
+      const box = rec.el.closest('.box') || document;
+      ['ocup','rede','edif','ar'].forEach(k => {
+        const cb = box.querySelector('input[data-mini-layer="'+k+'"]');
+        if(cb && cb.checked && rec.layers[k]) rec.layers[k].addTo(mm);
+      });
+
+      rec._drawn=true;
+    });
+  }
+
+  // ---------- Comentários/Problemas: listeners ----------
+  document.addEventListener('click', function(e){
+    var add = e.target.closest && e.target.closest('button[data-add-comment]');
+    if(add){
+      var fid = add.getAttribute('data-add-comment');
+      var cat  = (document.getElementById(fid+'-c-cat')||{}).value || 'Outro';
+      var sev  = (document.getElementById(fid+'-c-sev')||{}).value || 'Média';
+      var text = (document.getElementById(fid+'-c-text')||{}).value || '';
+      var loc  = (document.getElementById(fid+'-c-loc')||{}).value || '';
+      
+      var fotoInput = document.getElementById(fid+'-c-foto');
+      var fotoFile = fotoInput && fotoInput.files.length > 0 ? fotoInput.files[0] : null;
+
+      if(!text.trim()){ showToast('Escreve uma descrição do problema.'); return; }
+
+      const addCommentWithPhoto = (photoDataUrl) => {
+        var arr = loadComments(fid);
+        arr.push({ id: Date.now(), cat:cat, sev:sev, text:text.trim(), loc:loc.trim(), foto:photoDataUrl || '', status:'pendente', created:Date.now() });
+        saveComments(fid, arr);
+        // limpar
+        if(document.getElementById(fid+'-c-text')) document.getElementById(fid+'-c-text').value='';
+        if(document.getElementById(fid+'-c-loc')) document.getElementById(fid+'-c-loc').value='';
+        if(fotoInput) fotoInput.value = '';
+        const activeBtn = document.querySelector('button[data-comments-filter="'+fid+'"].active');
+        var currentFilter = activeBtn ? activeBtn.getAttribute('data-val') : 'all';
+        renderComments(fid, currentFilter);
+        showToast('Comentário adicionado.', 'success');
+      };
+
+      if (fotoFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) { addCommentWithPhoto(e.target.result); };
+        reader.readAsDataURL(fotoFile);
+      } else {
+        addCommentWithPhoto(''); // No photo
+      }
+    }
+
+    var act = e.target.closest && e.target.closest('button[data-cmd]');
+    if(act){
+      var cmd = act.getAttribute('data-cmd');
+      var fid = act.getAttribute('data-fid');
+      var cid = +act.getAttribute('data-id');
+      var arr = loadComments(fid);
+      var ix = arr.findIndex(function(x){ return x.id===cid; });
+      if(ix<0) return;
+
+      if(cmd==='toggle'){
+        arr[ix].status = (arr[ix].status==='resolvido') ? 'pendente' : 'resolvido';
+        saveComments(fid, arr);
+        const activeBtn = document.querySelector('button[data-comments-filter="'+fid+'"].active');
+        var currentFilter = activeBtn ? activeBtn.getAttribute('data-val') : 'all';
+        renderComments(fid, currentFilter);
+      } else if(cmd==='delete'){
+        if(confirm('Remover este comentário?')){
+          arr.splice(ix,1);
+          saveComments(fid, arr);
+          const activeBtn = document.querySelector('button[data-comments-filter="'+fid+'"].active');
+          var currentFilter = activeBtn ? activeBtn.getAttribute('data-val') : 'all';
+          renderComments(fid, currentFilter);
+        }
+      } else if(cmd==='edit'){
+        var novo = prompt('Editar descrição:', arr[ix].text||'');
+        if(novo!=null){
+          arr[ix].text = novo.trim();
+          saveComments(fid, arr);
+          const activeBtn = document.querySelector('button[data-comments-filter="'+fid+'"].active');
+          var currentFilter = activeBtn ? activeBtn.getAttribute('data-val') : 'all';
+          renderComments(fid, currentFilter);
+        }
+      }
+    }
+
+    var filt = e.target.closest && e.target.closest('button[data-comments-filter]');
+    if(filt){
+      var fid = filt.getAttribute('data-comments-filter');
+      var val = filt.getAttribute('data-val');
+      document.querySelectorAll('button[data-comments-filter="'+fid+'"]').forEach(function(b){ b.classList.remove('active'); });
+      filt.classList.add('active');
+      renderComments(fid, val);
+    }
+  });
+
+  // Exportar / Importar JSON (comentários)
+  document.addEventListener('click', function(e){
+    var ex = e.target.closest && e.target.closest('button[data-export-comments]');
+    if(!ex) return;
+    var fid = ex.getAttribute('data-export-comments');
+    var blob = new Blob([ JSON.stringify(loadComments(fid), null, 2) ], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fid+'-comentarios.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+  document.addEventListener('change', function(e){
+    var inp = e.target.matches && e.target.matches('input[type="file"][data-import-comments]') && e.target;
+    if(!inp || !inp.files || !inp.files[0]) return;
+    var fid = inp.getAttribute('data-import-comments');
+    var file = inp.files[0];
+    var rd = new FileReader();
+    rd.onload = function(){
+      try{
+        var arr = JSON.parse(rd.result||'[]');
+        if(!Array.isArray(arr)) throw new Error('Formato inválido');
+        saveComments(fid, arr);
+        renderComments(fid, 'all');
+        showToast('Comentários importados.', 'success');
+      }catch(_){ showToast('Falha ao importar JSON.'); }
+    };
+    rd.readAsText(file);
+  });
+
+  // Submeter INFORMAÇÃO (Supabase)
+  document.addEventListener('click', async function(e){
+    const btn = e.target.closest && e.target.closest('button[data-submit-info]');
+    if(!btn) return;
+    const fid = btn.getAttribute('data-submit-info');
+    const fichaEl = document.getElementById(fid);
+    if (!fichaEl) return;
+    
+    btn.disabled = true;
+    btn.textContent = 'A processar...';
+
+    try{
+        const payload = await buildInfoPayload(fid);
+        if(!payload){ showToast('Não foi possível preparar os dados.', 'error'); return; }
+
+        const row = {
+          aldeia_id: payload.aldeiaId,
+          aldeia_nome: payload.aldeiaNome,
+          payload: payload,
+          submitted_at: new Date().toISOString()
+        };
+
+      var res = await tryPostJSON(API_INFO, row);
+      if(!res.ok){ throw new Error(await res.text()); }
+      showToast('Informação submetida com sucesso 🎉', 'success');
+
+      // Limpar todos os campos do formulário após sucesso
+      const formContainer = fichaEl.querySelector('.info-comments details:first-child .box');
+      if (formContainer) {
+        formContainer.querySelectorAll('input:not([type="file"]), textarea').forEach(input => input.value = '');
+        formContainer.querySelectorAll('select').forEach(select => select.selectedIndex = 0); // Reset selects
+        formContainer.querySelectorAll('input[type="file"]').forEach(fileInput => fileInput.value = ''); // Clear file inputs
+
+        // Reset dynamic grids to initial state
+        fichaEl.querySelector('#'+fid+'-pop-grid .form-grid-body').innerHTML = formRowPopTpl() + formRowPopTpl();
+        fichaEl.querySelector('#'+fid+'-osl-grid .form-grid-body').innerHTML = formRowOSLTpl();
+        fichaEl.querySelector('#'+fid+'-prev-grid .form-grid-body').innerHTML = formRowPrevTpl();
+        fichaEl.querySelector('#'+fid+'-sim-grid .form-grid-body').innerHTML = formRowSimTpl();
+      }
+
+      // Fechar o painel de "Adicionar informação"
+      fichaEl.querySelector('.info-comments details:first-child').open = false;
+    }catch(err){
+      console.error(err);
+      showToast('Erro ao submeter informação. Ver consola.');
+    }finally{
+      btn.disabled=false;
+      btn.textContent = 'Submeter informação';
+    }
+  });
+
+  // Submeter COMENTÁRIOS (Supabase)
+  document.addEventListener('click', async function(e){
+    var btn = e.target.closest && e.target.closest('button[data-submit-comments]');
+    if(!btn) return;
+    var fid = btn.getAttribute('data-submit-comments');
+    var fichaEl = document.getElementById(fid);
+    var nome = fichaEl && fichaEl.querySelector('.sum-title') ? fichaEl.querySelector('.sum-title').textContent.trim() : '';
+    var comments = loadComments(fid);
+
+    const row = {
+      aldeia_id: fid,
+      aldeia_nome: nome,
+      total: comments.length,
+      comments: comments,
+      submitted_at: new Date().toISOString()
+    };
+
+    btn.disabled = true;
+    try{
+      var res = await tryPostJSON(API_COMMENTS, row);
+      if(!res.ok){ throw new Error(await res.text()); }
+      showToast('Comentários submetidos com sucesso ✅', 'success');
+
+      // Limpar campos de adicionar comentário após submissão para o servidor
+      if(document.getElementById(fid+'-c-cat')) document.getElementById(fid+'-c-cat').selectedIndex = 0;
+      if(document.getElementById(fid+'-c-sev')) document.getElementById(fid+'-c-sev').selectedIndex = 0;
+      // Os campos de texto e foto já são limpos na função addCommentWithPhoto
+    }catch(err){
+      console.error(err);
+      showToast('Erro ao submeter comentários. Ver consola.');
+      // fallbackDownload(fid+'-comentarios-submissao.json', row); // opcional
+    }finally{
+      btn.disabled=false;
+    }
+  });
+
+  /* Painéis exclusivos (Adicionar informação vs Comentários) */
+  document.addEventListener('toggle', function(ev){
+    var det = ev.target;
+    if(det.tagName !== 'DETAILS') return;
+    // Apenas para os painéis de info/comentários
+    var wrap = det.closest('.info-comments'); // O pai comum
+    if(!wrap) return;
+
+    if(det.open){
+      wrap.querySelectorAll(':scope > details').forEach(function(d){
+        if(d !== det) d.open = false;
+      });
+    }
+  }, true);
+
+  // Ao carregar a página, garantir que apenas um painel está aberto
+  document.querySelectorAll('.info-comments').forEach(function(container){
+    var openDetails = container.querySelectorAll(':scope > details[open]');
+    if (openDetails.length > 1) {
+      // Deixa apenas o primeiro aberto e fecha os outros
+      openDetails.forEach((det, index) => { if(index > 0) det.open = false; });
+    }
+  });
+  // -------- FIM DOMContentLoaded
+});
+</script>
+
+</html>

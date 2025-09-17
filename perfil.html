@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Perfil do Utilizador | Aldeias Seguras Pessoas Seguras</title>
+
+  <!-- Base -->
+  <link rel="stylesheet" href="main.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet (para o mapa de localização) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Chart.js (para gráficos) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase (variáveis do projeto) -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+
+  <style>
+    :root{
+      --green:#2e7d32; --green-2:#256b2a;
+      --line:#e0e0e0; --text:#333;
+      --text-muted: #666;
+      --mint:#e8f5e9;
+      --shadow:0 4px 12px rgba(0,0,0,.08);
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --bg-grad:
+        radial-gradient(1200px 560px at 8% -10%, #eaf7ee 0%, transparent 60%),
+        radial-gradient(1000px 520px at 110% 0%, #eef5ff 0%, transparent 55%),
+        linear-gradient(#fafafa, #f5f7f6);
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0; font-family:'Roboto',system-ui,-apple-system,Segoe UI,Ubuntu,"Helvetica Neue",Arial;
+      color:var(--text); background:var(--bg-grad); line-height:1.6;
+      display:flex; flex-direction:column; min-height:100vh;
+    }
+
+    /* ===== Hero (faixa do título) ===== */
+    .hero{
+      background:linear-gradient(135deg, #2e7d32, #2e7d32 60%, #256b2a);
+      color:#fff; padding:2.2rem 1rem; text-align:center;
+      border-bottom:1px solid rgba(255,255,255,.15);
+    }
+    .hero h2{ margin:0; font-size:clamp(1.4rem, 2.5vw, 1.8rem) }
+    .hero p{ margin:.35rem 0 0; opacity:.95 }
+
+    /* ===== Content wrapper ===== */
+    .wrap{
+      width:min(1040px, 96%);
+      margin:1.5rem auto 2.5rem;
+      padding:0 0.2rem;
+    }
+
+    /* ===== Profile card ===== */
+    .profile-card{
+      background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .profile-header{
+      display:grid; grid-template-columns:auto 1fr auto; gap:1.2rem;
+      align-items:center; padding:1.25rem 1.5rem; background:#fcfdff; border-bottom:1px solid var(--line);
+    }
+
+    .avatar{
+      width:84px; height:84px; border-radius:50%; display:grid; place-items:center;
+      font-size: 2rem; font-weight:800; letter-spacing:.04em; color:#1b5e20;
+      background:
+        radial-gradient(60% 60% at 30% 30%, #ffffff 0%, #dff2e3 100%),
+        linear-gradient(#eaf7ee, #e1f0e5);
+      border:3px solid #fff;
+      box-shadow:0 0 0 3px var(--green), 0 6px 18px rgba(46,125,50,.2);
+      margin-inline:auto;
+    }
+
+    .profile-info h3, .profile-info h2{ margin:.1rem 0 }
+    .profile-info h2{ color:#1b5e20; font-size:clamp(1.2rem,2.6vw,1.5rem) }
+    .profile-info p{ margin:0; color:#50745a }
+
+    .profile-actions{ display:flex; gap:.6rem; flex-wrap:wrap; justify-content:flex-end }
+
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:.45rem;
+      padding:.7rem 1.05rem; border-radius:999px; font-weight:800; cursor:pointer;
+      text-decoration:none; border:1px solid #cfe7d0; background:#fff; color:#2e7d32;
+      transition:filter .15s, transform .05s, background .2s, box-shadow .2s;
+    }
+    .btn:hover{ filter:brightness(.98) }
+    .btn:active{ transform:translateY(1px) }
+    .btn.primary{ background:var(--green); color:#fff; border-color:var(--green-2); box-shadow:0 6px 16px rgba(46,125,50,.25) }
+    .btn.secondary{ background:#eef7ef; color:#2e7d32 }
+    .btn.danger{ background:#e53935; border-color:#c0392b; color:#fff }
+
+    .profile-body{ padding:1.5rem 1.75rem; }
+
+    /* ===== Data list (modo leitura) ===== */
+    .data-list{
+      display:grid; grid-template-columns: minmax(140px, auto) 1fr;
+      gap: .8rem 1.5rem; margin:.6rem 0 0; font-size: 1.05rem;
+    }
+    .data-list dt{
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding-top: .3rem;
+    }
+    .data-list dd{ margin:0; color:var(--text); font-weight: 500; }
+
+    /* ===== Form (modo edição) ===== */
+    #editMode, #changePassMode, #deleteAccountMode { display:none }
+    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem }
+
+    label{ display:block; font-weight:600; color:#1f3b22; margin:.2rem 0 .35rem }
+    input[type="text"], input[type="password"] {
+      width:100%; padding:.82rem .9rem; border:1px solid var(--line);
+      border-radius:var(--radius-md); font:inherit; background:#fff;
+      outline:none; box-shadow: inset 0 1px 2px rgba(0,0,0,.02);
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color:var(--green);
+      box-shadow:0 0 0 3px rgba(46,125,50,.15), inset 0 1px 2px rgba(0,0,0,.02);
+    }
+
+    /* Estilos para o mapa no formulário de edição */
+    .form-group { margin-top: 1.5rem; }
+    .hint { font-size: .9rem; color: #566; margin-top: -.2rem; margin-bottom: .5rem; }
+    #location-map { height: 300px; border-radius: var(--radius-md); border: 1px solid var(--line); background-color: #f0f2f0; }
+    #coords-display { text-align:center; color: #666; font-size: .9rem; margin-top: .4rem; }
+
+    .form-actions{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.4rem }
+
+    /* ===== Mensagens ===== */
+    .msg{
+      border-radius:var(--radius-md); padding:.85rem 1rem; margin:.6rem 0 .4rem; border:1px solid transparent; font-weight:600;
+    }
+    .msg.ok{ background:#e7f6ec; color:#1b5e20; border-color:#c8e6c9 }
+    .msg.err{ background:#fdecea; color:#b71c1c; border-color:#f5c6cb }
+
+    /* Estilos para os relatos do utilizador */
+    .reports-container {
+        padding: 1.5rem 1.75rem;
+    }
+    .reports-container h3 {
+        margin-top: 0;
+        margin-bottom: 1.25rem;
+        color: var(--green);
+        border-bottom: 2px solid var(--mint);
+        padding-bottom: .5rem;
+        font-size: 1.35rem;
+    }
+    .reports-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .report-item {
+        background-color: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        padding: 1rem 1.2rem;
+        transition: box-shadow .2s, transform .2s;
+    }
+    .report-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,.07);
+    }
+    .report-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+    .report-header .date { font-weight: 600; color: var(--green); }
+    .report-header .status { font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 999px; background-color: #e9ecef; color: #495057; text-transform: capitalize; white-space: nowrap; }
+    .report-details { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; }
+    .report-details strong { color: #343a40; }
+    .no-reports { color: var(--text-muted); text-align: center; padding: 2rem 1rem; border: 2px dashed var(--line); border-radius: var(--radius-md); background-color: #f8f9fa; }
+
+    /* ===== Responsividade ===== */
+    @media (max-width:720px){
+      .profile-header{ grid-template-columns:1fr; text-align:center; gap:.9rem; padding: 1rem; }
+      .profile-actions{
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        margin-top: 1rem;
+      }
+      .profile-actions .btn {
+        width: 100%;
+        max-width: 320px;
+      }
+      .profile-body{ padding: 1.2rem 1rem; }
+      .reports-container { padding: 1.2rem 1rem; }
+      .data-list{ grid-template-columns:1fr; gap: .2rem; }
+      .data-list dt {
+        padding-top: 1rem;
+      }
+      .data-list dd {
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .form-grid{ grid-template-columns:1fr }
+      .data-list > *:last-child dd { border-bottom: none; }
+    }
+
+    /* ===== Footer ===== */
+    footer{ background:#fff; border-top:1px solid var(--line); padding:.7rem; text-align:center; margin-top:auto; color:#555 }
+  </style>
+</head>
+<body>
+  <!-- HEADER (usa o teu main.css/main.js para interações) -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo">
+      <h1>Aldeia Segura Pessoas Seguras</h1>
+    </div>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="compreender.html">Compreender</a></li>
+        <li><a href="explorar.html">Explorar</a></li>
+        <li><a href="reduzir.html">Reduzir</a></li>
+        <li><a href="aldeias.html">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html">Contacto</a></li>
+      </ul>
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+      </div>
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav"><span></span></button>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" role="banner">
+    <h2>O Meu Perfil</h2>
+    <p>Atualiza os teus dados para receberes alertas mais relevantes.</p>
+  </section>
+
+  <!-- SCRIM + MENU MOBILE -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html">Início</a>
+    <a href="compreender.html">Compreender</a>
+    <a href="explorar.html">Explorar</a>
+    <a href="reduzir.html">Reduzir</a>
+    <a href="aldeias.html">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html">Contacto</a>
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="wrap">
+    <div class="profile-card">
+      <div class="profile-header">
+        <div class="avatar" id="avatar">?</div>
+        <div class="profile-info">
+          <h2 id="welcomeMessage">A carregar…</h2>
+          <p id="userEmail">—</p>
+        </div>
+        <div class="profile-actions">
+          <button id="editBtn" class="btn primary" type="button">Editar</button>
+          <button id="changePassBtn" class="btn secondary" type="button">Alterar Palavra-passe</button>
+          <button id="logoutBtn" class="btn secondary" type="button" title="Terminar Sessão">Sair</button>
+          <button id="deleteAccountTriggerBtn" class="btn danger" type="button">Apagar Conta</button>
+        </div>
+      </div>
+
+      <div class="profile-body">
+        <!-- Modo de Visualização -->
+        <section id="viewMode" aria-live="polite" aria-busy="true">
+          <h3 style="margin:.1rem 0 .6rem;color:var(--green)">Os seus dados</h3>
+          <dl class="data-list">
+            <dt>Nome Completo</dt>
+            <dd id="userName">A carregar…</dd>
+
+            <dt>Localização (Alertas)</dt>
+            <dd id="userLocation">Não definida</dd>
+
+            <dt>Morada</dt>
+            <dd id="userAddress">A carregar…</dd>
+          </dl>
+        </section>
+
+        <!-- Modo de Edição -->
+        <form id="editMode" autocomplete="on" novalidate>
+          <h3 style="margin:.2rem 0 .8rem;color:var(--green)">Editar os seus dados</h3>
+          <div class="form-grid">
+            <div>
+              <label for="editName">Nome Completo</label>
+              <input type="text" id="editName" autocomplete="name" required>
+            </div>
+            <div>
+              <label for="editAddress">Morada</label>
+              <input type="text" id="editAddress" autocomplete="street-address">
+            </div>
+            <div>
+              <label for="editPostalCode">Código Postal</label>
+              <input type="text" id="editPostalCode" autocomplete="postal-code">
+            </div>
+            <div>
+              <label for="editCity">Localidade</label>
+              <input type="text" id="editCity" autocomplete="address-level2">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="location-map">Localização da Habitação (para alertas)</label>
+            <p class="hint">Arraste o marcador para a sua localização exata. Isto é usado para o notificar sobre incêndios na sua área.</p>
+            <div class="form-actions" style="margin-bottom: .6rem; justify-content: flex-start;">
+              <button type="button" id="use-my-location" class="btn secondary">Usar a minha localização</button>
+              <button type="button" id="remove-location" class="btn" style="background-color: #fbe9e7; border-color: #ffcdd2; color: #c62828;">Remover Localização</button>
+            </div>
+            <div id="location-map"></div>
+            <p id="coords-display">Clique no mapa para definir a sua localização.</p>
+          </div>
+
+          <div id="updateMessage" class="msg" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="submit" id="saveBtn" class="btn primary">Guardar Alterações</button>
+            <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+          </div>
+        </form>
+
+        <!-- Modo Mudar Palavra-passe -->
+        <form id="changePassMode" autocomplete="off" novalidate style="display:none;">
+          <h3 style="margin:.2rem 0 .8rem;color:var(--green)">Alterar Palavra-passe</h3>
+          <div class="form-grid">
+            <div>
+              <label for="newPassword">Nova Palavra-passe (mínimo 8 caracteres)</label>
+              <input type="password" id="newPassword" required minlength="8">
+            </div>
+            <div>
+              <label for="confirmNewPassword">Confirmar Nova Palavra-passe</label>
+              <input type="password" id="confirmNewPassword" required>
+            </div>
+          </div>
+          <div id="passUpdateMessage" class="msg" style="display:none;"></div>
+          <div class="form-actions" style="margin-top: 1.5rem;">
+            <button type="submit" id="savePassBtn" class="btn primary">Guardar Nova Palavra-passe</button>
+            <button type="button" id="cancelPassBtn" class="btn secondary">Cancelar</button>
+          </div>
+        </form>
+
+        <!-- Modo Apagar Conta -->
+        <section id="deleteAccountMode" style="display:none; margin-top: 1.5rem; border-top: 2px solid #e53935; padding-top: 1rem;">
+            <h3 style="color: #c62828;">Apagar Conta Permanentemente</h3>
+            <p><strong>Atenção:</strong> Esta ação é <strong>irreversível</strong>. Todos os seus dados, incluindo o seu perfil e os seus relatos, serão apagados permanentemente.</p>
+            <p>Para confirmar, por favor escreva "<strong>APAGAR</strong>" na caixa abaixo.</p>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div>
+                    <label for="deleteConfirmInput">Confirmar ação</label>
+                    <input type="text" id="deleteConfirmInput" autocomplete="off" placeholder="Escreva APAGAR aqui">
+                </div>
+            </div>
+            <div id="deleteAccountMessage" class="msg" style="display:none;"></div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" id="confirmDeleteBtn" class="btn danger" disabled>Apagar a minha conta para sempre</button>
+                <button type="button" id="cancelDeleteBtn" class="btn secondary">Cancelar</button>
+            </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Relatos do Utilizador -->
+    <div class="profile-card" style="margin-top: 1.5rem;">
+      <div class="reports-container">
+        <h3>Os Seus Relatos de Incêndio</h3>
+        <div id="reportsContainer">
+          <p>A carregar relatos...</p>
+        </div>
+        <div id="loadMoreContainer" style="text-align: center; margin-top: 1.5rem;"></div>
+
+        <!-- Estatísticas -->
+        <div id="statsContainer" style="display: none; margin-top: 2rem; border-top: 1px solid var(--line); padding-top: 1.5rem;">
+            <h3>Estatísticas de Relatos</h3>
+            <div style="position: relative; height:300px">
+                <canvas id="reportsChart"></canvas>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="main.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Setup Supabase and UI elements
+      const supabase = window.supabaseClient || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+ 
+      // UI Elements
+      const viewMode = document.getElementById('viewMode');
+      const editMode = document.getElementById('editMode');
+      const deleteAccountMode = document.getElementById('deleteAccountMode');
+      const changePassMode = document.getElementById('changePassMode');
+      const editBtn = document.getElementById('editBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      const changePassBtn = document.getElementById('changePassBtn');
+      const cancelPassBtn = document.getElementById('cancelPassBtn');
+      const deleteAccountTriggerBtn = document.getElementById('deleteAccountTriggerBtn');
+      const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const updateMessage = document.getElementById('updateMessage');
+      const passUpdateMessage = document.getElementById('passUpdateMessage');
+      const deleteAccountMessage = document.getElementById('deleteAccountMessage');
+      const avatarEl = document.getElementById('avatar');
+      const welcomeMessageEl = document.getElementById('welcomeMessage');
+      const userEmailEl = document.getElementById('userEmail');
+      const userNameEl = document.getElementById('userName');
+      const userAddressEl = document.getElementById('userAddress');
+      const userLocationEl = document.getElementById('userLocation');
+      const coordsDisplayEl = document.getElementById('coords-display');
+      const editNameInput = document.getElementById('editName');
+      const editAddressInput = document.getElementById('editAddress');
+      const editPostalCodeInput = document.getElementById('editPostalCode');
+      const editCityInput = document.getElementById('editCity');
+      const useMyLocationBtn = document.getElementById('use-my-location');
+      const removeLocationBtn = document.getElementById('remove-location');
+      const saveBtn = document.getElementById('saveBtn');
+      const editForm = document.getElementById('editMode');
+      const newPasswordInput = document.getElementById('newPassword');
+      const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+      const savePassBtn = document.getElementById('savePassBtn');
+      const changePassForm = document.getElementById('changePassMode');
+      const deleteConfirmInput = document.getElementById('deleteConfirmInput');
+      const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+ 
+      // Map state variables
+      let profileMap = null;
+      let profileMarker = null;
+      let currentCoords = null; // {lat, lng}
+      let myReportsChart = null;
+      let initialProfileData = {}; // To store the initial profile data
+ 
+      // Reports state
+      let currentReportPage = 0;
+      const reportsPerPage = 5;
+ 
+      // 2. Authentication check
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+          window.location.href = 'login.html?next=perfil.html';
+          return;
+      }
+ 
+      // 3. Function to load user reports
+      async function loadUserReports(userId, page = 0) {
+          const isFirstLoad = (page === 0);
+          const reportsContainer = document.getElementById('reportsContainer');
+          const loadMoreContainer = document.getElementById('loadMoreContainer');
+
+          if (isFirstLoad) {
+              reportsContainer.innerHTML = '<p>A carregar relatos...</p>';
+              loadMoreContainer.innerHTML = ''; // Limpa o botão ao carregar pela primeira vez
+          } else {
+              const btn = loadMoreContainer.querySelector('button');
+              if (btn) {
+                  btn.disabled = true;
+                  btn.textContent = 'A carregar...';
+              }
+          }
+
+          const from = page * reportsPerPage;
+          const to = from + reportsPerPage - 1;
+
+          // Get total count to decide if "Load More" is needed
+          const { count, error: countError } = await supabase
+              .from('relatos')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', userId);
+
+          if (countError) {
+              console.error("Erro ao contar relatos:", countError);
+              reportsContainer.innerHTML = '<p class="msg err">Não foi possível carregar os seus relatos.</p>';
+              return;
+          }
+
+          // Fetch the actual reports for the current page
+          const { data: reports, error } = await supabase
+              .from('relatos')
+              .select('when, lat, lng, status, seen')
+              .eq('user_id', userId)
+              .order('when', { ascending: false })
+              .range(from, to);
+
+          if (error) {
+              console.error("Erro ao carregar relatos:", error);
+              if (isFirstLoad) {
+                  reportsContainer.innerHTML = '<p class="msg err">Não foi possível carregar os seus relatos.</p>';
+              }
+              return;
+          }
+
+          if (isFirstLoad && (!reports || reports.length === 0)) {
+              reportsContainer.innerHTML = '<div class="no-reports"><p>Ainda não submeteu nenhum relato.</p><a href="Incendio.html" class="btn primary" style="margin-top: 1rem;">Relatar um Incêndio</a></div>';
+              return;
+          }
+
+          const statusColors = {
+              'novo': { bg: '#e3f2fd', text: '#1565c0' }, // Azul para novo
+              'ativo': { bg: '#ffebee', text: '#c62828' }, // Vermelho para ativo
+              'controlado': { bg: '#fff3e0', text: '#ef6c00' }, // Laranja para controlado
+              'extinto': { bg: '#e8f5e9', text: '#2e7d32' }, // Verde para extinto
+              'default': { bg: '#e9ecef', text: '#495057' } // Cinza para outros
+          };
+
+          const reportsHtml = reports.map(report => {
+              const reportDate = new Date(report.when).toLocaleString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+              const location = `Lat: ${report.lat.toFixed(4)}, Lon: ${report.lng.toFixed(4)}`;
+              const seenItems = report.seen && report.seen.length > 0 ? report.seen.join(', ') : 'N/A';
+              const status = report.status || 'N/A';
+              const statusLower = status.toLowerCase();
+              const color = statusColors[statusLower] || statusColors.default;
+ 
+              return `
+                  <li class="report-item">
+                      <div class="report-header">
+                          <span class="date">${reportDate}</span>
+                          <span class="status" style="background-color: ${color.bg}; color: ${color.text}; border: 1px solid ${color.text}22;">${status}</span>
+                      </div>
+                      <div class="report-details">
+                          <strong>Localização:</strong> ${location}<br>
+                          <strong>Observado:</strong> ${seenItems}
+                      </div>
+                  </li>`;
+          }).join('');
+
+          if (isFirstLoad) {
+              reportsContainer.innerHTML = `<ul class="reports-list">${reportsHtml}</ul>`;
+          } else {
+              reportsContainer.querySelector('.reports-list').insertAdjacentHTML('beforeend', reportsHtml);
+          }
+
+          const totalLoaded = (page + 1) * reportsPerPage;
+          if (count > totalLoaded) {
+              loadMoreContainer.innerHTML = `<button id="loadMoreReportsBtn" class="btn secondary">Carregar mais</button>`;
+              document.getElementById('loadMoreReportsBtn').addEventListener('click', () => {
+                  currentReportPage++;
+                  loadUserReports(userId, currentReportPage);
+              });
+          } else {
+              loadMoreContainer.innerHTML = ''; // Sem mais relatos, remove o botão
+          }
+      }
+ 
+      // Função para carregar e renderizar estatísticas dos relatos
+      async function loadAndRenderStats(userId) {
+          const statsContainer = document.getElementById('statsContainer');
+          const chartCanvas = document.getElementById('reportsChart');
+          if (!statsContainer || !chartCanvas) return;
+
+          const { data: reports, error } = await supabase
+              .from('relatos')
+              .select('when')
+              .eq('user_id', userId);
+
+          if (error || !reports || reports.length < 1) {
+              statsContainer.style.display = 'none';
+              return;
+          }
+
+          statsContainer.style.display = 'block';
+
+          // Prepara dados para os últimos 12 meses
+          const monthLabels = [];
+          const monthCounts = Array(12).fill(0);
+          const now = new Date();
+
+          for (let i = 11; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              monthLabels.push(d.toLocaleString('pt-PT', { month: 'short' }) + '/' + d.getFullYear().toString().slice(-2));
+          }
+
+          reports.forEach(report => {
+              const reportDate = new Date(report.when);
+              const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+              twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+              if (reportDate >= twelveMonthsAgo) {
+                  const monthDiff = (reportDate.getFullYear() - now.getFullYear()) * 12 + (reportDate.getMonth() - now.getMonth());
+                  const index = 11 + monthDiff;
+                  if (index >= 0 && index < 12) {
+                      monthCounts[index]++;
+                  }
+              }
+          });
+
+          // Renderiza o gráfico
+          const ctx = chartCanvas.getContext('2d');
+          if (myReportsChart) {
+              myReportsChart.destroy();
+          }
+
+          myReportsChart = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: monthLabels,
+                  datasets: [{
+                      label: 'Nº de Relatos',
+                      data: monthCounts,
+                      backgroundColor: 'rgba(46, 125, 50, 0.6)',
+                      borderColor: 'rgba(46, 125, 50, 1)',
+                      borderWidth: 1,
+                      borderRadius: 4,
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: { beginAtZero: true, ticks: { stepSize: 1, color: '#666' }, grid: { color: '#e0e0e0' } },
+                      x: { ticks: { color: '#666' }, grid: { display: false } }
+                  },
+                  plugins: {
+                      legend: { display: false },
+                      title: { display: true, text: 'Seus Relatos nos Últimos 12 Meses', color: '#333', font: { size: 16, weight: 'bold' } },
+                      tooltip: { backgroundColor: '#333' }
+                  }
+              }
+          });
+      }
+
+      // Helper function to parse PostGIS POINT string
+      function parseGeogString(geog) {
+        if (!geog || typeof geog !== 'string') {
+          return null;
+        }
+        // Matches "POINT(lng lat)"
+        const match = geog.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
+        if (match && match.length === 3) {
+          const lng = parseFloat(match[1]);
+          const lat = parseFloat(match[2]);
+          if (!isNaN(lng) && !isNaN(lat)) {
+            return { lat, lng };
+          }
+        }
+        return null;
+      }
+      // 4. Function to populate UI with profile data
+      function populateUI(profile) {
+          initialProfileData = profile || {}; // Store for later use
+          const fullName = profile?.full_name || session.user.user_metadata?.full_name || '';
+          const initials = (fullName || session.user.email)
+              .split(/[^\p{L}\p{N}]+/u).filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase();
+ 
+          // Header
+          avatarEl.textContent = initials || '?';
+          welcomeMessageEl.textContent = fullName || 'O Meu Perfil';
+          userEmailEl.textContent = session.user.email;
+ 
+          // View Mode
+          userNameEl.textContent = fullName || 'Não preenchido';
+          const addressParts = [profile?.address, profile?.postal_code, profile?.city].filter(Boolean);
+          userAddressEl.textContent = addressParts.length ? addressParts.join(', ') : 'Não preenchida';
+ 
+          // Location
+          const coords = parseGeogString(profile?.geog);
+          if (coords) {
+            currentCoords = coords;
+            userLocationEl.textContent = `Lat: ${coords.lat.toFixed(4)}, Lon: ${coords.lng.toFixed(4)}`;
+          } else {
+              currentCoords = null;
+              userLocationEl.textContent = 'Não definida';
+          }
+ 
+          viewMode.setAttribute('aria-busy', 'false');
+      }
+ 
+      // Function to handle setting coordinates and marker
+      const setCoords = (latlng) => {
+          currentCoords = { lat: latlng.lat, lng: latlng.lng };
+          if (!profileMarker) {
+              profileMarker = L.marker(latlng, { draggable: true }).addTo(profileMap)
+                  .on('dragend', (e) => setCoords(e.target.getLatLng()));
+          } else {
+              profileMarker.setLatLng(latlng);
+          }
+          coordsDisplayEl.textContent = `Lat: ${currentCoords.lat.toFixed(5)}, Lon: ${currentCoords.lng.toFixed(5)}`;
+      };
+ 
+      // 5. Function to initialize the map (called only once)
+      function initializeMap() {
+          const mapContainer = document.getElementById('location-map');
+          if (!mapContainer || profileMap) return; // Don't re-initialize
+ 
+          const initialView = currentCoords ? [currentCoords.lat, currentCoords.lng] : [39.7, -8.0];
+          const initialZoom = currentCoords ? 15 : 6;
+ 
+          profileMap = L.map(mapContainer).setView(initialView, initialZoom);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(profileMap);
+ 
+          profileMap.on('click', (e) => setCoords(e.latlng));
+ 
+          // Add existing marker if location is set
+          if (currentCoords) {
+              profileMarker = L.marker(initialView, { draggable: true }).addTo(profileMap)
+                  .on('dragend', (e) => setCoords(e.target.getLatLng()));
+              coordsDisplayEl.textContent = `Lat: ${currentCoords.lat.toFixed(5)}, Lon: ${currentCoords.lng.toFixed(5)}`;
+          } else {
+              coordsDisplayEl.textContent = 'Clique no mapa para definir a sua localização.';
+          }
+      }
+ 
+      // 6. Load initial data and set up UI
+      try {
+          viewMode.setAttribute('aria-busy', 'true');
+          const { data: profile, error } = await supabase
+              .rpc('get_my_profile') // Usar a nova função da base de dados
+              .single();
+ 
+          if (error && error.status !== 406) { // 406 = no row, which is fine
+              throw error;
+          }
+          populateUI(profile);
+          loadUserReports(session.user.id, 0);
+          loadAndRenderStats(session.user.id);
+      } catch (error) {
+          console.error('Erro ao carregar perfil:', error);
+          welcomeMessageEl.textContent = 'Erro ao carregar perfil';
+          viewMode.setAttribute('aria-busy', 'false');
+      }
+ 
+      // 7. Event Listeners
+      editBtn.addEventListener('click', () => {
+          // Populate form with current data
+          editNameInput.value = initialProfileData.full_name || '';
+          editAddressInput.value = initialProfileData.address || '';
+          editPostalCodeInput.value = initialProfileData.postal_code || '';
+          editCityInput.value = initialProfileData.city || '';
+ 
+          // Switch views
+          viewMode.style.display = 'none';
+          deleteAccountMode.style.display = 'none';
+          changePassMode.style.display = 'none';
+          editMode.style.display = 'block';
+          updateMessage.style.display = 'none';
+ 
+          // Initialize map if it's the first time, or just update its view
+          setTimeout(() => {
+              initializeMap(); // This will only run once
+              if (profileMap) {
+                  const view = currentCoords ? [currentCoords.lat, currentCoords.lng] : [39.7, -8.0];
+                  const zoom = currentCoords ? 15 : 6;
+                  profileMap.setView(view, zoom);
+                  profileMap.invalidateSize(); // Crucial for rendering in a newly visible container
+              }
+          }, 100);
+      });
+ 
+      cancelBtn.addEventListener('click', () => {
+          editMode.style.display = 'none';
+          deleteAccountMode.style.display = 'none';
+          changePassMode.style.display = 'none';
+          viewMode.style.display = 'block';
+
+          // Restore coordinates to their initial state before editing
+          const initialCoords = parseGeogString(initialProfileData?.geog);
+          if (initialCoords) {
+            currentCoords = initialCoords;
+          } else {
+            currentCoords = null;
+          }
+      });
+ 
+      useMyLocationBtn.addEventListener('click', () => {
+          if (!navigator.geolocation) {
+              alert('A geolocalização não é suportada pelo seu navegador.');
+              return;
+          }
+          navigator.geolocation.getCurrentPosition(
+              (position) => {
+                  const userLatLng = { lat: position.coords.latitude, lng: position.coords.longitude };
+                  setCoords(userLatLng);
+                  if (profileMap) {
+                      profileMap.setView(userLatLng, 15);
+                  }
+              },
+              () => alert('Não foi possível obter a sua localização. Verifique as permissões do navegador.')
+          );
+      });
+ 
+      removeLocationBtn.addEventListener('click', () => {
+          currentCoords = null;
+          if (profileMarker) {
+              profileMap.removeLayer(profileMarker);
+              profileMarker = null;
+          }
+          coordsDisplayEl.textContent = 'Localização removida. Clique no mapa para definir uma nova.';
+      });
+ 
+      // Listeners para alterar a palavra-passe
+      changePassBtn.addEventListener('click', () => {
+          viewMode.style.display = 'none';
+          editMode.style.display = 'none';
+          deleteAccountMode.style.display = 'none';
+          changePassMode.style.display = 'block';
+          passUpdateMessage.style.display = 'none';
+          newPasswordInput.value = '';
+          confirmNewPasswordInput.value = '';
+      });
+
+      cancelPassBtn.addEventListener('click', () => {
+          changePassMode.style.display = 'none';
+          deleteAccountMode.style.display = 'none';
+          viewMode.style.display = 'block';
+      });
+
+      changePassForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          savePassBtn.disabled = true;
+          savePassBtn.textContent = 'A guardar...';
+          passUpdateMessage.style.display = 'none';
+
+          const newPassword = newPasswordInput.value;
+          const confirmPassword = confirmNewPasswordInput.value;
+
+          if (newPassword.length < 8) {
+              passUpdateMessage.textContent = 'A nova palavra-passe deve ter pelo menos 8 caracteres.';
+              passUpdateMessage.className = 'msg err';
+              passUpdateMessage.style.display = 'block';
+              savePassBtn.disabled = false;
+              savePassBtn.textContent = 'Guardar Nova Palavra-passe';
+              return;
+          }
+
+          if (newPassword !== confirmPassword) {
+              passUpdateMessage.textContent = 'As palavras-passe não coincidem.';
+              passUpdateMessage.className = 'msg err';
+              passUpdateMessage.style.display = 'block';
+              savePassBtn.disabled = false;
+              savePassBtn.textContent = 'Guardar Nova Palavra-passe';
+              return;
+          }
+
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+          if (error) {
+              passUpdateMessage.textContent = 'Erro ao alterar a palavra-passe: ' + error.message;
+              passUpdateMessage.className = 'msg err';
+          } else {
+              passUpdateMessage.textContent = 'Palavra-passe alterada com sucesso!';
+              passUpdateMessage.className = 'msg ok';
+              setTimeout(() => { cancelPassBtn.click(); }, 2500);
+          }
+          passUpdateMessage.style.display = 'block';
+          savePassBtn.disabled = false;
+          savePassBtn.textContent = 'Guardar Nova Palavra-passe';
+      });
+
+      // Listeners para apagar conta
+      deleteAccountTriggerBtn.addEventListener('click', () => {
+          viewMode.style.display = 'none';
+          editMode.style.display = 'none';
+          changePassMode.style.display = 'none';
+          deleteAccountMode.style.display = 'block';
+          deleteAccountMessage.style.display = 'none';
+          deleteConfirmInput.value = '';
+          confirmDeleteBtn.disabled = true;
+      });
+
+      cancelDeleteBtn.addEventListener('click', () => {
+          deleteAccountMode.style.display = 'none';
+          viewMode.style.display = 'block';
+      });
+
+      deleteConfirmInput.addEventListener('input', () => {
+          confirmDeleteBtn.disabled = (deleteConfirmInput.value !== 'APAGAR');
+      });
+
+      confirmDeleteBtn.addEventListener('click', async () => {
+          if (deleteConfirmInput.value !== 'APAGAR') return;
+
+          confirmDeleteBtn.disabled = true;
+          confirmDeleteBtn.textContent = 'A apagar...';
+          deleteAccountMessage.style.display = 'none';
+
+          try {
+              const { error } = await supabase.functions.invoke('delete-user', {
+                  method: 'POST',
+              });
+
+              if (error) throw error;
+
+              // Sucesso
+              deleteAccountMessage.textContent = 'A sua conta foi apagada com sucesso. A redirecionar...';
+              deleteAccountMessage.className = 'msg ok';
+              deleteAccountMessage.style.display = 'block';
+
+              // O logout é implícito, mas limpamos a sessão do cliente e redirecionamos.
+              await supabase.auth.signOut();
+              setTimeout(() => {
+                  window.location.href = 'index.html';
+              }, 3000);
+
+          } catch (error) {
+              console.error('Erro ao apagar a conta:', error);
+              deleteAccountMessage.textContent = 'Erro ao apagar a conta: ' + error.message;
+              deleteAccountMessage.className = 'msg err';
+              deleteAccountMessage.style.display = 'block';
+              confirmDeleteBtn.disabled = false;
+              confirmDeleteBtn.textContent = 'Apagar a minha conta para sempre';
+          }
+      });
+
+      editForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'A guardar…';
+          updateMessage.style.display = 'none'; // Esconde mensagens anteriores
+          
+          try {
+            const updates = {
+              full_name: editNameInput.value.trim(),
+              address: editAddressInput.value.trim(),
+              postal_code: editPostalCodeInput.value.trim(),
+              city: editCityInput.value.trim(),
+              updated_at: new Date(),
+            };
+  
+            if (currentCoords) {
+              updates.geog = `POINT(${currentCoords.lng} ${currentCoords.lat})`;
+            } else {
+              updates.geog = null;
+            }
+  
+            // Passo 1: Fazer o UPDATE.
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update(updates)
+              .eq('id', session.user.id);
+  
+            if (updateError) { throw updateError; }
+  
+            // Passo 2: Se o update correu bem, ir buscar o perfil completo e atualizado.
+            const { data: updatedProfile, error: selectError } = await supabase
+              .rpc('get_my_profile')
+              .single();
+  
+            if (selectError) { throw selectError; }
+  
+            populateUI(updatedProfile);
+            editMode.style.display = 'none';
+            viewMode.style.display = 'block';
+
+            updateMessage.textContent = 'Perfil atualizado com sucesso!';
+            updateMessage.className = 'msg ok';
+            updateMessage.style.display = 'block';
+            setTimeout(() => { updateMessage.style.display = 'none'; }, 4000);
+          } catch (error) {
+              console.error('Erro ao atualizar o perfil:', error);
+              updateMessage.textContent = 'Erro ao atualizar: ' + error.message;
+              updateMessage.className = 'msg err';
+              updateMessage.style.display = 'block';
+          } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Guardar Alterações';
+          }
+      });
+
+      // Logout
+      logoutBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          await supabase.auth.signOut();
+          window.location.href = 'index.html';
+      });
+    });
+  </script>
+</body>
+</html>

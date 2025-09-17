@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Política de Privacidade — Aldeias Seguras Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="main.css">
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+  <style>
+    :root{
+      --green:#3a7d44;
+      --green-2:#2e7d32;
+      --line:#e7e7e7;
+      --shadow:0 8px 24px rgba(0,0,0,.10);
+      --bg-grad: radial-gradient(1100px 500px at 10% -10%, #eaf7ee 0%, transparent 60%),
+                 radial-gradient(1000px 500px at 110% 0%, #eef5ff 0%, transparent 55%),
+                 linear-gradient(#fafafa, #f5f7f6);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:'Roboto',sans-serif; color:#333; line-height:1.65;
+      display:flex; flex-direction:column; min-height:100vh; background:#f4f7f5;
+    }
+
+    .hero{
+      background: var(--bg-grad);
+      color:#123; text-align:center; padding:3.2rem 1rem; position:relative; border-bottom:1px solid var(--line);
+    }
+    .hero h2{font-size:2rem; margin:.2rem 0}
+    .hero p{margin:.3rem 0 0; color:#4a6b54}
+
+    .content{max-width:1050px; margin:1.75rem auto 2.5rem; padding:0 1.25rem}
+    .lead{
+      background:#fff; border:1px solid var(--line); border-left:6px solid var(--green);
+      border-radius:10px; padding:1rem 1.2rem; box-shadow:0 2px 6px rgba(0,0,0,.05);
+    }
+    .toc{
+      display:flex; flex-wrap:wrap; gap:.6rem; margin:1rem 0 1.2rem;
+    }
+    .pill{
+      background:#eef7ef; color:var(--green-2); padding:.35rem .7rem; border-radius:999px;
+      font-size:.9rem; text-decoration:none; border:1px solid #d5ead7;
+    }
+
+    h3{color:var(--green); margin:2rem 0 .6rem}
+    h4{margin:1.2rem 0 .4rem; color:#1f3b22}
+    .card{
+      background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+      overflow:hidden; margin:.9rem 0;
+    }
+    .card .body{ padding:1rem 1.15rem }
+    .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:1rem}
+    .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:1rem}
+    @media(max-width:900px){ .grid-2,.grid-3{grid-template-columns:1fr} }
+
+    .note{background:#fffaf2; border:1px solid #ffe0a3; border-left:6px solid #ffb300; padding:1rem 1.2rem; border-radius:10px}
+    .ok{background:#eef7ef; border:1px solid #cfe7d2; border-left:6px solid var(--green); padding:1rem 1.2rem; border-radius:10px}
+
+    ul{padding-left:1.2rem}
+    li{margin:.35rem 0}
+
+    .meta{font-size:.9rem; color:#5a6; margin-top:.6rem}
+    footer{background:#fff; padding:.6rem; text-align:center; margin-top:auto; font-size:.9rem; color:#555; border-top:1px solid var(--line)}
+    a{color:#1b5e20}
+    a:hover{text-decoration:underline}
+
+    /* Detalhes/Resumo elegantes */
+    details{ background:#fff; border:1px solid var(--line); border-radius:10px; margin:.6rem 0; box-shadow:0 2px 6px rgba(0,0,0,.05) }
+    summary{ cursor:pointer; list-style:none; padding:.8rem 1rem; font-weight:700; color:#1f3b22 }
+    summary::marker, summary::-webkit-details-marker{ display:none }
+    details[open] summary{ background:#fafafa; border-bottom:1px solid var(--line) }
+    details .inner{ padding: .8rem 1rem 1rem }
+
+    .contact-box{
+      display:flex; flex-wrap:wrap; gap:.8rem; align-items:center;
+      background:#fff; border:1px solid var(--line); border-radius:10px; padding:.8rem 1rem;
+    }
+    .chip{display:inline-block; background:#eef7ef; color:var(--green-2); border:1px solid #d5ead7; border-radius:999px; padding:.2rem .6rem; font-weight:600}
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo" />
+      <h1>Aldeias Seguras Pessoas Seguras</h1>
+    </div>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="compreender.html">Compreender</a></li>
+        <li><a href="explorar.html">Explorar</a></li>
+        <li><a href="reduzir.html">Reduzir</a></li>
+        <li><a href="aldeias.html">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html">Contacto</a></li>
+      </ul>
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+      </div>
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav"><span></span></button>
+    </nav>
+  </header>
+
+  <!-- SCRIM + MENU MOBILE -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html">Início</a>
+    <a href="compreender.html">Compreender</a>
+    <a href="explorar.html">Explorar</a>
+    <a href="reduzir.html">Reduzir</a>
+    <a href="aldeias.html">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html">Contacto</a>
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <section class="hero">
+    <h2>Política de Privacidade</h2>
+    <p>Como recolhemos, usamos e protegemos os seus dados pessoais.</p>
+  </section>
+
+  <main class="content">
+    <div class="lead">
+      Esta Política explica, em conformidade com o <strong>Regulamento (UE) 2016/679 (RGPD)</strong> e a legislação portuguesa aplicável,
+      como tratamos dados pessoais neste website. Recomendamos a sua leitura atenta.
+      <div class="meta">Última atualização: <strong>4 de setembro de 2025</strong></div>
+    </div>
+
+    <!-- Índice rápido -->
+    <nav class="toc" aria-label="Navegação interna">
+      <a class="pill" href="#responsavel">Responsável & contactos</a>
+      <a class="pill" href="#dados">Que dados recolhemos</a>
+      <a class="pill" href="#finalidades">Finalidades & base legal</a>
+      <a class="pill" href="#conservacao">Prazos de conservação</a>
+      <a class="pill" href="#partilha">Partilha & subcontratantes</a>
+      <a class="pill" href="#transferencias">Transferências internacionais</a>
+      <a class="pill" href="#seguranca">Segurança</a>
+      <a class="pill" href="#direitos">Os seus direitos</a>
+      <a class="pill" href="#cookies">Cookies</a>
+      <a class="pill" href="#menores">Menores</a>
+      <a class="pill" href="#alteracoes">Alterações à política</a>
+    </nav>
+
+    <section id="responsavel">
+      <h3>1) Responsável pelo tratamento & contactos</h3>
+      <div class="card"><div class="body">
+        <p><strong>Responsável:</strong> <em>Aldeias Seguras Pessoas Seguras</em> (indicar entidade jurídica, NIF e morada se aplicável).</p>
+        <div class="contact-box">
+          <span class="chip">E-mail</span> <a href="mailto:contacto@aldeiasseguras.pt">contacto@aldeiasseguras.pt</a>
+          <span class="chip">Endereço</span> Rua/Localidade (atualizar)
+        </div>
+        <p style="margin:.6rem 0 0">Se nomeares um Encarregado de Proteção de Dados (DPO), indica-o aqui com contacto.</p>
+      </div></div>
+    </section>
+
+    <section id="dados">
+      <h3>2) Que dados recolhemos</h3>
+      <div class="grid-2">
+        <div class="card"><div class="body">
+          <h4>Dados fornecidos por ti</h4>
+          <ul>
+            <li><strong>Formulários</strong> (ex.: contacto): nome, e-mail, mensagem e campos adicionais.</li>
+            <li><strong>Conta</strong> (se aplicável): nome, e-mail, palavra-passe (armazenada de forma encriptada no backend).</li>
+          </ul>
+        </div></div>
+        <div class="card"><div class="body">
+          <h4>Dados gerados automaticamente</h4>
+          <ul>
+            <li><strong>Técnicos</strong>: IP, tipo de browser, páginas visitadas, carimbos de data.</li>
+            <li><strong>Cookies</strong> e tecnologias similares (ver secção “Cookies”).</li>
+          </ul>
+        </div></div>
+      </div>
+      <div class="note" style="margin-top:.6rem">Não recolhemos categorias especiais de dados (art. 9.º RGPD) nem realizamos decisões exclusivamente automatizadas com efeitos legais significativos.</div>
+    </section>
+
+    <section id="finalidades">
+      <h3>3) Finalidades & base legal do tratamento</h3>
+      <div class="grid-2">
+        <div class="card"><div class="body">
+          <h4>Finalidades</h4>
+          <ul>
+            <li><strong>Atendimento</strong> de pedidos via formulário/e-mail.</li>
+            <li><strong>Gestão de conta</strong> e autenticação (login/registo/recuperação).</li>
+            <li><strong>Melhoria do site</strong> (estatísticas agregadas, usabilidade, segurança).</li>
+            <li><strong>Comunicações</strong> relevantes (ex.: resposta a pedidos; newsletters só com consentimento).</li>
+          </ul>
+        </div></div>
+        <div class="card"><div class="body">
+          <h4>Base legal (art. 6.º RGPD)</h4>
+          <ul>
+            <li><strong>Execução de contrato</strong> ou diligências pré-contratuais (ex.: criar/gerir conta).</li>
+            <li><strong>Consentimento</strong> (ex.: newsletters; cookies não essenciais).</li>
+            <li><strong>Interesse legítimo</strong> (melhorar serviços, prevenir fraude, segurança do site).</li>
+            <li><strong>Obrigação legal</strong> (cumprimento de pedidos de autoridades, faturação se aplicável).</li>
+          </ul>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="conservacao">
+      <h3>4) Prazos de conservação</h3>
+      <div class="card"><div class="body">
+        <ul>
+          <li><strong>Formulários de contacto:</strong> até 24 meses após última interação (salvo obrigação legal diferente).</li>
+          <li><strong>Conta:</strong> enquanto ativa; apagamos/anonimizamos após pedido ou inatividade prolongada (prazo a definir).</li>
+          <li><strong>Logs técnicos:</strong> tipicamente 12 meses, para segurança e auditoria.</li>
+        </ul>
+        <p class="meta">Após o prazo, dados são eliminados ou anonimizados de forma segura.</p>
+      </div></div>
+    </section>
+
+    <section id="partilha">
+      <h3>5) Partilha de dados & subcontratantes</h3>
+      <div class="card"><div class="body">
+        <p>Podemos partilhar dados com <strong>fornecedores/operadores</strong> (alojamento, e-mail, analytics, autenticação), apenas o necessário e sob contrato (art. 28.º RGPD). Poderemos ainda partilhar com <strong>autoridades</strong> se legalmente obrigatório.</p>
+        <p>Não vendemos dados pessoais.</p>
+      </div></div>
+    </section>
+
+    <section id="transferencias">
+      <h3>6) Transferências internacionais</h3>
+      <div class="card"><div class="body">
+        <p>Se algum fornecedor estiver fora do EEE, asseguramos salvaguardas adequadas (ex.: decisões de adequação da Comissão Europeia ou <em>Standard Contractual Clauses</em>), avaliando riscos adicionais.</p>
+      </div></div>
+    </section>
+
+    <section id="seguranca">
+      <h3>7) Segurança</h3>
+      <div class="card"><div class="body">
+        <ul>
+          <li>Ligação segura (HTTPS) e boas práticas de segurança no servidor.</li>
+          <li>Controlo de acessos e <strong>hash</strong> de palavras-passe no backend.</li>
+          <li><strong>Backups</strong> e registos de auditoria.</li>
+        </ul>
+        <div class="ok" style="margin-top:.6rem">Apesar das medidas, nenhum sistema é 100% infalível. Em caso de violação de dados, atuaremos nos termos legais aplicáveis.</div>
+      </div></div>
+    </section>
+
+    <section id="direitos">
+      <h3>8) Os seus direitos</h3>
+      <div class="grid-2">
+        <div class="card"><div class="body">
+          <h4>RGPD (art. 15.º–22.º)</h4>
+          <ul>
+            <li><strong>Acesso</strong> aos dados e à informação sobre o tratamento.</li>
+            <li><strong>Retificação</strong> de dados inexatos/incompletos.</li>
+            <li><strong>Apagamento</strong> (“direito a ser esquecido”).</li>
+            <li><strong>Limitação</strong> e <strong>oposição</strong> ao tratamento.</li>
+            <li><strong>Portabilidade</strong> (fornecimento em formato estruturado).</li>
+            <li>Não sujeição a decisões automatizadas com efeitos legais significativos.</li>
+          </ul>
+        </div></div>
+        <div class="card"><div class="body">
+          <h4>Como exercer</h4>
+          <p>Envia pedido para <a href="mailto:contacto@aldeiasseguras.pt">contacto@aldeiasseguras.pt</a>. Podemos solicitar prova de identidade. Responderemos, em regra, no prazo de <strong>1 mês</strong>.</p>
+          <p>Se entender necessário, pode reclamar junto da <a href="https://www.cnpd.pt/" target="_blank" rel="noopener">CNPD — Comissão Nacional de Proteção de Dados</a>.</p>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="cookies">
+      <h3>9) Cookies</h3>
+      <details>
+        <summary>Resumo</summary>
+        <div class="inner">
+          <ul>
+            <li><strong>Essenciais</strong> — necessárias ao funcionamento do site (não podem ser desativadas).</li>
+            <li><strong>Analíticas</strong> — ajudam a medir uso/desempenho (apenas com consentimento).</li>
+            <li><strong>Funcionais</strong> — recordam preferências.</li>
+          </ul>
+          <p>Podes gerir preferências no teu navegador ou, quando disponível, no banner de cookies do site.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Detalhe e controlo</summary>
+        <div class="inner">
+          <p>Se implementares ferramentas de analytics/terceiros, lista aqui o nome, finalidade, base legal (consentimento) e duração dos cookies.</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="menores">
+      <h3>10) Menores</h3>
+      <div class="card"><div class="body">
+        <p>Os nossos serviços não se destinam a menores de 13 anos. Se acreditas que recolhemos dados de um menor sem consentimento válido, contacta-nos para remoção.</p>
+      </div></div>
+    </section>
+
+    <section id="alteracoes">
+      <h3>11) Alterações a esta Política</h3>
+      <div class="card"><div class="body">
+        <p>Poderemos atualizar esta Política para refletir alterações legais ou operacionais. A versão vigente será sempre publicada nesta página, com a data de atualização.</p>
+      </div></div>
+    </section>
+
+    <section style="margin-top:1.2rem">
+      <div class="contact-box">
+        <span class="chip">Dúvidas sobre privacidade?</span>
+        Escreve para <a href="mailto:contacto@aldeiasseguras.pt">contacto@aldeiasseguras.pt</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 Ruben Sousa · Todos os direitos reservados
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+</body>
+</html>
