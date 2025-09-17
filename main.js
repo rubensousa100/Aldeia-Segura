@@ -129,8 +129,16 @@
  
     // 2. Se o utilizador está logado e está numa página de login/registo
     if (session && publicOnlyPages.includes(currentPage)) {
-      window.location.href = 'perfil.html';
-      return; // Pára a execução
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextUrl = urlParams.get('next');
+      if (nextUrl) {
+        // Redireciona para a página guardada se existir
+        window.location.href = decodeURIComponent(nextUrl);
+      } else {
+        // Caso contrário, vai para o perfil como padrão
+        window.location.href = 'perfil.html';
+      }
+      return;
     }
 
     await updateAuthUI(session); // Atualiza a UI com a sessão inicial
