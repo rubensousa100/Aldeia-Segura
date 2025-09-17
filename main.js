@@ -141,8 +141,11 @@
       return;
     }
 
-    await updateAuthUI(session); // Atualiza a UI com a sessão inicial
-
+    // NÃO chamamos updateAuthUI aqui.
+    // O listener onAuthStateChange abaixo é a fonte de verdade única.
+    // Ele é despoletado uma vez no carregamento da página com o estado atual (evento INITIAL_SESSION)
+    // e depois para qualquer mudança (SIGNED_IN, SIGNED_OUT), garantindo que a UI está sempre sincronizada e sem "piscar".
+    
     // Ouve por mudanças no estado de autenticação (login, logout, etc.)
     supabase.auth.onAuthStateChange(async (_event, session) => {
       // Envolvemos a atualização da UI num bloco try...catch para garantir que,
