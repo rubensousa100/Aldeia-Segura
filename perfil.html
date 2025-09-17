@@ -6,8 +6,6 @@
   <title>Perfil do Utilizador | Aldeias Seguras Pessoas Seguras</title>
 
   <!-- Base -->
-  <!-- Base para links relativos funcionarem no GitHub Pages -->
-  <base href="/Aldeia-Segura/">
   <link rel="stylesheet" href="main.css">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
 
@@ -746,17 +744,45 @@
  
       // 6. Load initial data and set up UI
       try {
-          viewMode.setAttribute('aria-busy', 'true');
-          const { data: profile, error } = await supabase
-              .rpc('get_my_profile') // Usar a nova função da base de dados
-              .single();
- 
-          if (error && error.status !== 406) { // 406 = no row, which is fine
-              throw error;
-          }
-          populateUI(profile);
-          loadUserReports(session.user.id, 0);
-          loadAndRenderStats(session.user.id);
+            viewMode.setAttribute('aria-busy', 'true');
+            
+            // Tenta obter o perfil do utilizador.
+            // A coluna 'geog' é convertida para texto para ser mais fácil de processar no JS.
+            let { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*, geog::text')
+                .eq('id', session.user.id)
+                .single();
+
+            // Se o erro não for "nenhuma linha encontrada", é um erro real que deve ser mostrado.
+            if (error && error.code !== 'PGRST116') { // PGRST116 = 'exact-one-row-not-found'
+                throw error;
+            }
+
+            // Se o perfil não existir (primeiro login após o registo), cria um novo.
+            // Isto torna a aplicação mais robusta caso o trigger da base de dados falhe.
+            if (!profile) {
+                console.log('Perfil não encontrado, a criar um novo...');
+                const { data: newUserProfile, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: session.user.id,
+                        full_name: session.user.user_metadata.full_name,
+                        address: session.user.user_metadata.address,
+                        postal_code: session.user.user_metadata.postal_code,
+                        city: session.user.user_metadata.city,
+                        updated_at: new Date(),
+                    })
+                    .select('*, geog::text') // Seleciona o perfil recém-criado
+                    .single();
+
+                if (insertError) throw insertError;
+                profile = newUserProfile;
+            }
+
+            populateUI(profile);
+            loadUserReports(session.user.id, 0);
+            loadAndRenderStats(session.user.id);
       } catch (error) {
           console.error('Erro ao carregar perfil:', error);
           welcomeMessageEl.textContent = 'Erro ao carregar perfil';
@@ -937,42 +963,37 @@
           updateMessage.style.display = 'none'; // Esconde mensagens anteriores
           
           try {
-            const updates = {
-              full_name: editNameInput.value.trim(),
-              address: editAddressInput.value.trim(),
-              postal_code: editPostalCodeInput.value.trim(),
-              city: editCityInput.value.trim(),
-              updated_at: new Date(),
-            };
-  
-            if (currentCoords) {
-              updates.geog = `POINT(${currentCoords.lng} ${currentCoords.lat})`;
-            } else {
-              updates.geog = null;
-            }
-  
-            // Passo 1: Fazer o UPDATE.
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update(updates)
-              .eq('id', session.user.id);
-  
-            if (updateError) { throw updateError; }
-  
-            // Passo 2: Se o update correu bem, ir buscar o perfil completo e atualizado.
-            const { data: updatedProfile, error: selectError } = await supabase
-              .rpc('get_my_profile')
-              .single();
-  
-            if (selectError) { throw selectError; }
-  
-            populateUI(updatedProfile);
-            switchProfileView('view');
+              const updates = {
+                  id: session.user.id, // Importante para o upsert
+                  full_name: editNameInput.value.trim(),
+                  address: editAddressInput.value.trim(),
+                  postal_code: editPostalCodeInput.value.trim(),
+                  city: editCityInput.value.trim(),
+                  updated_at: new Date(),
+                  geog: currentCoords ? `POINT(${currentCoords.lng} ${currentCoords.lat})` : null,
+              };
+    
+              // Passo 1: Fazer o UPSERT.
+              // O upsert insere uma nova linha se não existir, ou atualiza se já existir.
+              const { error: upsertError } = await supabase
+                  .from('profiles')
+                  .upsert(updates, { onConflict: 'id' });
+    
+              if (upsertError) { throw upsertError; }
+    
+              // Passo 2: Se o upsert correu bem, ir buscar o perfil completo e atualizado.
+              const { data: updatedProfile, error: selectError } = await supabase
+                  .from('profiles').select('*, geog::text').eq('id', session.user.id).single();
+    
+              if (selectError) { throw selectError; }
+    
+              populateUI(updatedProfile);
+              switchProfileView('view');
 
-            updateMessage.textContent = 'Perfil atualizado com sucesso!';
-            updateMessage.className = 'msg ok';
-            updateMessage.style.display = 'block';
-            setTimeout(() => { updateMessage.style.display = 'none'; }, 4000);
+              updateMessage.textContent = 'Perfil atualizado com sucesso!';
+              updateMessage.className = 'msg ok';
+              updateMessage.style.display = 'block';
+              setTimeout(() => { updateMessage.style.display = 'none'; }, 4000);
           } catch (error) {
               console.error('Erro ao atualizar o perfil:', error);
               updateMessage.textContent = 'Erro ao atualizar: ' + error.message;
