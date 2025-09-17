@@ -122,24 +122,41 @@
     const emailErr = document.getElementById('emailErr');
     const okMsg = document.getElementById('okMsg');
     const errMsg = document.getElementById('errMsg');
+    const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
-    form.addEventListener('submit', (e)=>{
+    form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       okMsg.style.display = 'none';
       errMsg.style.display = 'none';
       emailErr.style.display = 'none';
 
-      if(!form.email.checkValidity()){
+      const emailInput = form.email;
+      if(!emailInput.checkValidity() || emailInput.value.trim() === ''){
         emailErr.style.display = 'block';
         return;
       }
 
-      // Simulação de pedido num site estático.
-      // Integra aqui o teu backend (ex.: fetch('/api/reset', { method:'POST', body: JSON.stringify({email}) }))
-      // e mostra mensagens conforme a resposta.
-      setTimeout(()=>{
+      const email = emailInput.value;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'A enviar...';
+
+      // O Supabase envia um e-mail com um link. Após o utilizador redefinir a senha,
+      // será redirecionado para a página de perfil.
+      // A URL base é retirada da configuração do Supabase (Site URL).
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'perfil.html', // Caminho relativo à Site URL
+      });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar link de recuperação';
+
+      if (error) {
+        errMsg.textContent = `Erro: ${error.message}`;
+        errMsg.style.display = 'block';
+      } else {
         okMsg.style.display = 'block';
-      }, 500);
+      }
     });
 
     form.email.addEventListener('input', ()=> emailErr.style.display = 'none');
