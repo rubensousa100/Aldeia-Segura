@@ -145,9 +145,21 @@
 
     // Ouve por mudanças no estado de autenticação (login, logout, etc.)
     supabase.auth.onAuthStateChange(async (_event, session) => {
-      await updateAuthUI(session);
-      if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
-        window.location.href = 'index.html';
+      // Envolvemos a atualização da UI num bloco try...catch para garantir que,
+      // mesmo que falhe, a lógica de redirecionamento crítica abaixo é executada.
+      try {
+        await updateAuthUI(session);
+      } catch (error) {
+        console.error("Falha ao atualizar a UI de autenticação no onAuthStateChange:", error);
+      }
+
+      // A lógica de redirecionamento é crucial, especialmente no logout.
+      // Verificamos se o evento é de logout e se o utilizador está numa página protegida.
+      // Usamos uma variável local para garantir que temos sempre o nome da página atual.
+      const pathPartsNow = window.location.pathname.split('/');
+      const pageNow = pathPartsNow.pop() || 'index.html';
+      if (_event === 'SIGNED_OUT' && protectedPages.includes(pageNow)) {
+        window.location.href = 'index.html'; // Redireciona para a página inicial
       }
     });
   }
