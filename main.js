@@ -115,40 +115,43 @@
     const pathParts = window.location.pathname.split('/');
     const currentPage = pathParts.pop() || 'index.html';
  
-    supabase.auth.onAuthStateChange(async (_event, session) => {
-      // 1. Atualizar sempre a UI para refletir o estado atual (logado/deslogado)
-      try {
-        await updateAuthUI(session);
-      } catch (error) {
-        console.error("Falha ao atualizar a UI de autenticação no onAuthStateChange:", error);
-      }
+    // PASSO 1: Obter a sessão atual para as verificações de guarda da página.
+    // Isto é executado ANTES de o resto da página carregar, prevenindo o acesso indevido.
+    const { data: { session } } = await supabase.auth.getSession();
 
-      // 2. Centralizar toda a lógica de redirecionamento aqui, dentro do listener.
-      // Isto garante que as decisões são tomadas com o estado de autenticação mais recente.
-
-      // Caso A: O utilizador acabou de fazer logout numa página protegida.
-      // A ação correta é enviá-lo para a página inicial.
-      if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
-        window.location.href = 'index.html';
-        return;
-      }
-
-      // Caso B: O utilizador não está logado e tenta aceder a uma página protegida.
-      // Deve ser enviado para a página de login.
-      if (!session && protectedPages.includes(currentPage)) {
+    // PASSO 2: Executar as guardas de página imediatamente.
+    // Se um utilizador não logado aceder a 'perfil.html', é redirecionado ANTES de a página tentar carregar os dados.
+    // Isto resolve o problema de a página ficar "A carregar...".
+    if (!session && protectedPages.includes(currentPage)) {
         const redirectTo = encodeURIComponent(currentPage + window.location.search + window.location.hash);
         window.location.href = `login.html?next=${redirectTo}`;
-        return;
-      }
+        return; // Pára a execução para garantir o redirecionamento.
+    }
  
-      // Caso C: O utilizador está logado e tenta aceder a uma página pública (ex: login, registo).
-      // Deve ser enviado para o seu perfil ou para a página 'next' se existir.
-      if (session && publicOnlyPages.includes(currentPage)) {
+    // Se um utilizador logado aceder a 'login.html', é redirecionado para o perfil.
+    if (session && publicOnlyPages.includes(currentPage)) {
         const urlParams = new URLSearchParams(window.location.search);
         const nextUrl = urlParams.get('next');
         window.location.href = nextUrl ? decodeURIComponent(nextUrl) : 'perfil.html';
-        return;
-      }
+        return; // Pára a execução.
+    }
+
+    // PASSO 3: Configurar o listener para TODAS as atualizações de UI e eventos futuros.
+    // onAuthStateChange é a "fonte da verdade". Ele é despoletado no carregamento da página
+    // com o estado atual e em qualquer mudança (login/logout), garantindo que a UI está sempre sincronizada.
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+        // A. Atualizar sempre a UI (cabeçalho, etc.) para refletir o estado.
+        try {
+            await updateAuthUI(session);
+        } catch (error) {
+            console.error("Falha ao atualizar a UI de autenticação:", error);
+        }
+
+        // B. Lidar com o caso específico de logout numa página protegida.
+        // Isto resolve o problema do botão "Sair" que não redirecionava.
+        if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
+            window.location.href = 'index.html';
+        }
     });
   }
 
