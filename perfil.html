@@ -1008,8 +1008,15 @@
       // Logout
       logoutBtn.addEventListener('click', async (e) => {
           e.preventDefault();
-          await supabase.auth.signOut();
-          window.location.href = 'index.html';
+          try {
+            await supabase.auth.signOut();
+          } catch (error) {
+            console.error("Erro ao terminar a sessão:", error);
+          } finally {
+            // Após a tentativa de logout, redirecionamos sempre para a página inicial.
+            // Isto garante que o utilizador sai da página de perfil, resolvendo o problema de ficar "preso".
+            window.location.href = 'index.html';
+          }
       });
     });
   </script>
