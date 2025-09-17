@@ -1008,15 +1008,11 @@
       // Logout
       logoutBtn.addEventListener('click', async (e) => {
           e.preventDefault();
-          try {
-            await supabase.auth.signOut();
-          } catch (error) {
-            console.error("Erro ao terminar a sessão:", error);
-          } finally {
-            // Após a tentativa de logout, redirecionamos sempre para a página inicial.
-            // Isto garante que o utilizador sai da página de perfil, resolvendo o problema de ficar "preso".
-            window.location.href = 'index.html';
-          }
+          // Apenas despoletamos o evento de signOut.
+          // O listener global em main.js (onAuthStateChange) é agora responsável
+          // por detetar o evento 'SIGNED_OUT' numa página protegida e redirecionar para 'index.html'.
+          // Isto centraliza a lógica e resolve problemas de "race condition".
+          await supabase.auth.signOut();
       });
     });
   </script>
