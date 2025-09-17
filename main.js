@@ -109,60 +109,45 @@
   async function handleAuth() {
     if (!supabase) return;
  
-    // Define quais páginas são protegidas e precisam de login
     const protectedPages = ['perfil.html'];
-    // Define quais páginas são para utilizadores não-logados
     const publicOnlyPages = ['login.html', 'Registro.html', 'recuperar_senha.html'];
  
     const pathParts = window.location.pathname.split('/');
-    const currentPage = pathParts.pop() || 'index.html'; // Garante que a raiz (/) é tratada como index.html
+    const currentPage = pathParts.pop() || 'index.html';
  
-    const { data: { session } } = await supabase.auth.getSession();
- 
-    // 1. Se o utilizador não está logado e está numa página protegida
-    if (!session && protectedPages.includes(currentPage)) {
-      // Guarda a página atual para redirecionar de volta após o login
-      const redirectTo = encodeURIComponent(currentPage + window.location.search + window.location.hash);
-      window.location.href = `login.html?next=${redirectTo}`;
-      return; // Pára a execução para evitar que o resto do script da página corra
-    }
- 
-    // 2. Se o utilizador está logado e está numa página de login/registo
-    if (session && publicOnlyPages.includes(currentPage)) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nextUrl = urlParams.get('next');
-      if (nextUrl) {
-        // Redireciona para a página guardada se existir
-        window.location.href = decodeURIComponent(nextUrl);
-      } else {
-        // Caso contrário, vai para o perfil como padrão
-        window.location.href = 'perfil.html';
-      }
-      return;
-    }
-
-    // NÃO chamamos updateAuthUI aqui.
-    // O listener onAuthStateChange abaixo é a fonte de verdade única.
-    // Ele é despoletado uma vez no carregamento da página com o estado atual (evento INITIAL_SESSION)
-    // e depois para qualquer mudança (SIGNED_IN, SIGNED_OUT), garantindo que a UI está sempre sincronizada e sem "piscar".
-    
-    // Ouve por mudanças no estado de autenticação (login, logout, etc.)
     supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Envolvemos a atualização da UI num bloco try...catch para garantir que,
-      // mesmo que falhe, a lógica de redirecionamento crítica abaixo é executada.
+      // 1. Atualizar sempre a UI para refletir o estado atual (logado/deslogado)
       try {
         await updateAuthUI(session);
       } catch (error) {
         console.error("Falha ao atualizar a UI de autenticação no onAuthStateChange:", error);
       }
 
-      // A lógica de redirecionamento é crucial, especialmente no logout.
-      // Verificamos se o evento é de logout e se o utilizador está numa página protegida.
-      // Usamos uma variável local para garantir que temos sempre o nome da página atual.
-      const pathPartsNow = window.location.pathname.split('/');
-      const pageNow = pathPartsNow.pop() || 'index.html';
-      if (_event === 'SIGNED_OUT' && protectedPages.includes(pageNow)) {
-        window.location.href = 'index.html'; // Redireciona para a página inicial
+      // 2. Centralizar toda a lógica de redirecionamento aqui, dentro do listener.
+      // Isto garante que as decisões são tomadas com o estado de autenticação mais recente.
+
+      // Caso A: O utilizador acabou de fazer logout numa página protegida.
+      // A ação correta é enviá-lo para a página inicial.
+      if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Caso B: O utilizador não está logado e tenta aceder a uma página protegida.
+      // Deve ser enviado para a página de login.
+      if (!session && protectedPages.includes(currentPage)) {
+        const redirectTo = encodeURIComponent(currentPage + window.location.search + window.location.hash);
+        window.location.href = `login.html?next=${redirectTo}`;
+        return;
+      }
+ 
+      // Caso C: O utilizador está logado e tenta aceder a uma página pública (ex: login, registo).
+      // Deve ser enviado para o seu perfil ou para a página 'next' se existir.
+      if (session && publicOnlyPages.includes(currentPage)) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const nextUrl = urlParams.get('next');
+        window.location.href = nextUrl ? decodeURIComponent(nextUrl) : 'perfil.html';
+        return;
       }
     });
   }
