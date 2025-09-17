@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contacto — Aldeia Segura Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+  <style>
+    :root{
+      --green:#2e7d32; --green-2:#2e7d32;
+      --line:#e7e7e7; --text:#333;
+      --header-h:72px; /* altura header desktop */
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;font-family:'Roboto',system-ui,-apple-system,Segoe UI,Ubuntu,"Helvetica Neue",Arial;
+      background:#f6f7f6;color:var(--text);line-height:1.6;display:flex;flex-direction:column;min-height:100vh
+    }
+
+    /* ===== HEADER (igual às outras páginas) ===== */
+    header{
+      background:#fff;display:flex;align-items:center;justify-content:space-between;
+      padding:1rem 2rem;box-shadow:0 2px 5px rgba(0,0,0,.1);
+      position:sticky;top:0;z-index:5000;gap:1rem
+    }
+    .logo{display:flex;align-items:center;gap:10px;min-width:0}
+    .logo img{width:35px;height:35px}
+    .logo h1{margin:0;color:var(--green);font-weight:700;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    nav{display:flex;align-items:center;gap:1rem;flex-wrap:nowrap;min-width:0}
+    header nav, header nav ul{flex-wrap:nowrap;white-space:nowrap}
+    nav ul{list-style:none;display:flex;gap:1.2rem;margin:0;padding:0}
+    nav a{text-decoration:none;color:var(--green);font-weight:500;font-size:.95rem}
+
+    #langSwitch, #langSwitch2 {
+      border:1px solid #cfe7d0;border-radius:20px;padding:.25rem .6rem;
+      color:#2e7d32;background:#fff;font-weight:600;
+    }
+    .login-btn{
+      background:var(--green);color:#fff !important;padding:.45rem .95rem;border-radius:25px;
+      font-weight:700;border:1px solid #2e6b39;transition:background .2s,transform .1s;text-decoration:none;display:inline-block
+    }
+    .login-btn:hover{background:#2a6f2d;transform:translateY(-1px)}
+    .login-btn:active{transform:translateY(0)}
+
+    /* ===== MENU MOBILE (uniformizado) ===== */
+    .burger{
+      display:none; width:40px; height:40px; border:1px solid #cfe7d0;
+      border-radius:10px; background:#fff; cursor:pointer;
+      align-items:center; justify-content:center;
+    }
+    .burger span{
+      display:block; width:18px; height:2px; background:#2e7d32; position:relative;
+    }
+    .burger span::before,.burger span::after{
+      content:""; position:absolute; left:0; width:18px; height:2px; background:#2e7d32;
+    }
+    .burger span::before{ top:-6px } .burger span::after{ top:6px }
+
+    .mobile-nav{
+      position:fixed; inset:var(--header-h) 0 0 0; background:#fff; border-top:1px solid var(--line);
+      padding:1rem 1.25rem 2rem; overflow:auto; display:none !important; z-index:2000;
+    }
+    .mobile-nav.open{display:block !important}
+    .mobile-nav a{
+      display:block; padding:.85rem 0;
+      font-weight:700; font-size:1.18rem;
+    }
+    .mobile-nav a:link,
+    .mobile-nav a:visited{ color:var(--green); text-decoration:none; }
+    .mobile-nav a:hover{ text-decoration:underline; }
+    .mobile-nav .actions{display:flex;gap:.6rem;align-items:center;margin-top:.6rem}
+
+    .scrim.open{display:block !important}
+    body.no-scroll{position:fixed;width:100%;overflow:hidden;overscroll-behavior:none;touch-action:none}
+
+    /* Desktop seguro: nada do mobile aparece */
+    @media (min-width:901px){
+      .mobile-nav,.scrim{display:none !important}
+      .burger{display:none !important}
+    }
+    /* Tablet/Telemóvel */
+    @media (max-width:900px){
+      :root{ --header-h:64px; }
+      header{padding:.8rem 1rem}
+      nav ul{display:none}
+      #langSwitch, .login-btn{display:none}
+      .burger{display:flex}
+    }
+    /* Telemóveis pequenos */
+    @media (max-width:600px){
+      :root{ --header-h:56px; }
+      .mobile-nav,.scrim{inset:var(--header-h) 0 0 0}
+    }
+
+    /* ===== HERO ===== */
+    .hero{
+      background:url('Imagens/incendio20.jpg') center/cover no-repeat;color:#fff;text-align:center;
+      padding:3rem 1rem;position:relative
+    }
+    .hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
+    .hero h2{position:relative;z-index:1;margin:0;font-size:2rem}
+    .hero p{position:relative;z-index:1;margin:.4rem 0 0;font-weight:500}
+
+    /* ===== CONTEÚDO ===== */
+    .wrap{max-width:1100px;margin:1.75rem auto 2.5rem;padding:0 1.2rem}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:1.25rem}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} .hero h2{font-size:1.6rem} }
+
+    .card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+    .card .head{padding:1rem 1.25rem;border-bottom:1px solid var(--line);background:#f9fbf9}
+    .card .head h3{margin:0;color:var(--green)}
+    .card .body{padding:1rem 1.25rem}
+
+    .info{display:grid;gap:.6rem;margin:0;padding:0;list-style:none}
+    .info li{display:flex;gap:.6rem;align-items:flex-start}
+    .badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
+      background:#eef7ef;color:var(--green-2);border:1px solid #d5ead7;font-size:1rem;flex:0 0 28px}
+
+    /* ===== FORM: regras escopadas (não afetam o menu!) ===== */
+    #contactForm .row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+    @media (max-width: 640px){ #contactForm .row{grid-template-columns:1fr} }
+    #contactForm label{display:block;font-weight:600;color:#1f3b22;margin:.2rem 0 .25rem}
+    #contactForm input, #contactForm select, #contactForm textarea{
+      width:100%;padding:.75rem .8rem;border:1px solid #cfd9cf;border-radius:8px;font:inherit;background:#fff;
+      outline:none;box-shadow: inset 0 1px 2px rgba(0,0,0,.02);
+    }
+    #contactForm input:focus, #contactForm select:focus, #contactForm textarea:focus{
+      border-color:#9acd9e; box-shadow:0 0 0 3px rgba(58,125,68,.12), inset 0 1px 2px rgba(0,0,0,.02);
+    }
+    #contactForm textarea{min-height:140px;resize:vertical}
+
+    .actions{display:flex;gap:.6rem;align-items:center;margin-top:.6rem}
+    .btn{
+      padding:.75rem 1.1rem;border:0;border-radius:10px;font-weight:700;cursor:pointer;
+      background:linear-gradient(180deg, #2e7d32, #256b2a);color:#fff;box-shadow:0 2px 8px rgba(46,125,50,.25)
+    }
+    .btn:hover{filter:brightness(1.03)}
+    .ghost{
+      background:#eef7ef;color:#2e7d32;border:1px solid #cfe7d2;box-shadow:none;font-weight:600;
+    }
+    .hint{font-size:.9rem;color:#566;margin:.2rem 0 0}
+
+    .emergency{margin-top:1rem;padding:.85rem 1rem;border-radius:10px;background:#fff3f3;border:1px solid #ffcdd2}
+    .emergency b{color:#c62828}
+
+    /* Footer */
+    footer{background:#fff;padding:.7rem;text-align:center;margin-top:auto;font-size:.9rem;color:#555;border-top:1px solid var(--line)}
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <img src="Imagens/Aldeia.png" alt="Logo">
+      <h1>Aldeia Segura Pessoas Seguras</h1>
+    </div>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="compreender.html">Compreender</a></li>
+        <li><a href="explorar.html">Explorar</a></li>
+        <li><a href="reduzir.html">Reduzir</a></li>
+        <li><a href="aldeias.html">Aldeias Seguras</a></li>
+        <li><a href="Incendio.html">Fogo à Vista</a></li>
+        <li><a href="contacto.html">Contacto</a></li>
+      </ul>
+
+      <div data-auth-container style="display: contents;">
+        <select id="langSwitch" aria-label="Idioma">
+          <option value="pt">PT</option>
+          <option value="en">EN</option>
+        </select>
+        <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+      </div>
+      <button class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">
+        <span></span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- SCRIM + MENU MOBILE -->
+  <div id="scrim" class="scrim" aria-hidden="true"></div>
+  <aside id="mobileNav" class="mobile-nav" aria-hidden="true">
+    <a href="index.html">Início</a>
+    <a href="compreender.html">Compreender</a>
+    <a href="explorar.html">Explorar</a>
+    <a href="reduzir.html">Reduzir</a>
+    <a href="aldeias.html">Aldeias Seguras</a>
+    <a href="Incendio.html">Fogo à Vista</a>
+    <a href="contacto.html">Contacto</a>
+    <div class="actions" data-auth-container>
+      <select id="langSwitch2" aria-label="Idioma">
+        <option value="pt">PT</option>
+        <option value="en">EN</option>
+      </select>
+      <a href="login.html" class="login-btn" data-auth-link>Login / Registar</a>
+    </div>
+  </aside>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h2>Contacto</h2>
+    <p>Fala connosco — dúvidas, sugestões, parcerias ou reporte de risco.</p>
+  </section>
+
+  <!-- CONTEÚDO -->
+  <main class="wrap">
+    <div class="grid">
+
+      <!-- Contactos -->
+      <section class="card">
+        <div class="head"><h3>Contactos úteis</h3></div>
+        <div class="body">
+          <ul class="info">
+            <li>
+              <span class="badge">📍</span>
+              <div>
+                <b>Morada</b><br>
+                <span>Edifício Municipal, 4970-000 Arcos de Valdevez</span><br>
+                <a href="https://maps.google.com/?q=Arcos+de+Valdevez" target="_blank" rel="noopener" style="color:#2e7d32;text-decoration:underline">Ver no Google Maps</a>
+              </div>
+            </li>
+            <li>
+              <span class="badge">✉️</span>
+              <div>
+                <b>E-mail</b><br>
+                <a href="mailto:contacto@aldeiasseguras.pt" style="color:#2e7d32;text-decoration:underline">contacto@aldeiasseguras.pt</a>
+              </div>
+            </li>
+            <li>
+              <span class="badge">📞</span>
+              <div>
+                <b>Telefone</b><br>
+                <span>+351 000 000 000</span>
+              </div>
+            </li>
+            <li>
+              <span class="badge">🕘</span>
+              <div>
+                <b>Horário</b><br>
+                <span>Seg–Sex · 09:00–17:30</span>
+              </div>
+            </li>
+          </ul>
+
+          <div class="emergency" style="margin-top:1rem">
+            <p><b>Emergência:</b> 112 · <b>Floresta/Incêndios:</b> 117 · <b>SOS Ambiente (GNR):</b> 808 200 520</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Formulário -->
+      <section class="card">
+        <div class="head"><h3>Envia-nos uma mensagem</h3></div>
+        <div class="body">
+          <form id="contactForm">
+            <div class="row">
+              <div>
+                <label for="nome">Nome</label>
+                <input id="nome" name="nome" type="text" autocomplete="name" required />
+              </div>
+              <div>
+                <label for="email">E-mail</label>
+                <input id="email" name="email" type="email" autocomplete="email" required />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="assunto">Assunto</label>
+                <select id="assunto" name="assunto" required>
+                  <option value="" selected disabled>— Selecionar —</option>
+                  <option>Informação geral</option>
+                  <option>Sugestão</option>
+                  <option>Reportar risco</option>
+                  <option>Parcerias/voluntariado (OSL)</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+              <div>
+                <label for="telefone">Telefone (opcional)</label>
+                <input id="telefone" name="telefone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+351 ..." />
+              </div>
+            </div>
+
+            <div>
+              <label for="mensagem">Mensagem</label>
+              <textarea id="mensagem" name="mensagem" required placeholder="Escreve aqui a tua mensagem..."></textarea>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn">Enviar</button>
+            </div>
+
+            <p class="hint" style="margin-top:.6rem">
+              <small><b>Privacidade:</b> os dados serão usados apenas para responder ao teu pedido.</small>
+            </p>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>© 2025 Ruben Sousa · Todos os direitos reservados</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('contactForm');
+      if (!form) return;
+
+      // Criar dinamicamente a área de mensagens para manter o HTML limpo
+      const formMessage = document.createElement('div');
+      formMessage.id = 'formMessage';
+      formMessage.style.display = 'none';
+      formMessage.style.marginTop = '.8rem';
+      formMessage.style.padding = '.8rem 1rem';
+      formMessage.style.borderRadius = '8px';
+      form.querySelector('.actions').insertAdjacentElement('afterend', formMessage);
+
+      const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'A enviar...';
+        formMessage.style.display = 'none';
+
+        const formData = {
+          name: form.nome.value.trim(),
+          email: form.email.value.trim(),
+          subject: form.assunto.value,
+          phone: form.telefone.value.trim(),
+          message: form.mensagem.value.trim()
+        };
+
+        // Validação simples
+        if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+          formMessage.textContent = 'Por favor, preencha todos os campos obrigatórios.';
+          formMessage.style.background = '#fff3f3'; formMessage.style.color = '#c62828';
+          formMessage.style.display = 'block';
+          submitBtn.disabled = false; submitBtn.textContent = originalBtnText;
+          return;
+        }
+
+        const { error } = await supabase.from('contacts').insert([formData]);
+
+        if (error) {
+          console.error('Erro ao enviar contacto:', error);
+          formMessage.textContent = `Erro ao enviar: ${error.message}`;
+          formMessage.style.background = '#fff3f3'; formMessage.style.color = '#c62828';
+        } else {
+          formMessage.textContent = 'Mensagem enviada com sucesso! Obrigado.';
+          formMessage.style.background = '#eef7ef'; formMessage.style.color = '#1b5e20';
+          form.reset();
+        }
+
+        formMessage.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      });
+    });
+  </script>
+</body>
+</html>

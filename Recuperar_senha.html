@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recuperar Palavra-passe — Aldeias Seguras Pessoas Seguras</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --green:#3a7d44;
+      --green-2:#2e7d32;
+      --line:#e7e7e7;
+      --shadow:0 8px 24px rgba(0,0,0,.10);
+      --bg-grad: radial-gradient(1100px 500px at 10% -10%, #eaf7ee 0%, transparent 60%),
+                 radial-gradient(1000px 500px at 110% 0%, #eef5ff 0%, transparent 55%),
+                 linear-gradient(#fafafa, #f5f7f6);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:'Roboto',sans-serif; color:#333; line-height:1.6;
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:var(--bg-grad);
+    }
+    a{text-decoration:none; color:var(--green)}
+    a:hover{text-decoration:underline}
+
+    /* Cartão */
+    .auth-card{
+      width:100%; max-width:480px;
+      background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden;
+    }
+    .auth-head{
+      padding:1rem 1.25rem; display:flex; align-items:center; gap:.6rem;
+      border-bottom:1px solid var(--line); background:#f9fbf9;
+    }
+    .auth-head img{width:34px;height:34px}
+    .auth-head h1{margin:0;font-size:1rem;color:var(--green);font-weight:700}
+
+    .auth-body{ padding:1.25rem 1.25rem 1rem }
+    .title{ margin:.2rem 0 .2rem; font-size:1.35rem; font-weight:700; color:#1b5e20 }
+    .subtitle{ margin:0 0 .8rem; color:#4c6b50; font-size:.95rem }
+
+    label{ display:block; font-weight:600; color:#1f3b22; margin:.25rem 0 .25rem }
+    input{
+      width:100%; padding:.8rem .85rem;
+      border:1px solid #cfd9cf; border-radius:10px; outline:none; font:inherit; background:#fff;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.02);
+    }
+    input:focus{ border-color:#9acd9e; box-shadow:0 0 0 3px rgba(58,125,68,.12), inset 0 1px 2px rgba(0,0,0,.02) }
+
+    .btn{
+      display:inline-block; width:100%;
+      padding:.85rem 1rem; border:0; border-radius:10px; font-weight:700; cursor:pointer;
+      background:linear-gradient(180deg,#2e7d32,#256b2a); color:#fff; box-shadow:0 3px 10px rgba(46,125,50,.25);
+      margin-top:.6rem;
+    }
+    .btn:hover{filter:brightness(1.03)}
+
+    .muted{ text-align:center; font-size:.95rem; color:#566; margin:.6rem 0 0 }
+    .error{ display:none; margin:.35rem 0 0; font-size:.9rem; color:#c62828 }
+    .msg{
+      display:none; margin:.75rem 0 0; padding:.8rem 1rem; border-radius:10px; border:1px solid transparent;
+    }
+    .msg.ok{ background:#eef7ef; border-color:#cfe7d2; color:#1b5e20 }
+    .msg.err{ background:#fff3f3; border-color:#ffcdd2; color:#c62828 }
+
+    /* Voltar */
+    .back-link{
+      position:fixed; top:14px; left:16px; font-weight:600; padding:.35rem .55rem;
+      background:#eef7ef; border:1px solid #d5ead7; color:var(--green-2); border-radius:999px;
+    }
+
+    @media (max-width: 520px){
+      .auth-card{ margin: 0 12px; }
+      .back-link{ top:10px; left:10px }
+    }
+  </style>
+  <!-- Variáveis do Supabase -->
+  <script>
+    window.SUPABASE_URL  = "https://pyxoudeamrfisegykdtg.supabase.co";
+    window.SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5eG91ZGVhbXJmaXNlZ3lrZHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjUzMzQsImV4cCI6MjA3MzIwMTMzNH0.CBOB_ynuUGkrzCdz3bT5YkZvtERRBpV4GJ2AmbHEQdE";
+  </script>
+</head>
+<body>
+
+  <a href="index.html" class="back-link">← Voltar</a>
+
+  <main class="auth-card" role="main" aria-labelledby="title">
+    <div class="auth-head">
+      <img src="Imagens/Aldeia.png" alt="Logótipo">
+      <h1>Aldeias Seguras Pessoas Seguras</h1>
+    </div>
+
+    <div class="auth-body">
+      <h2 id="title" class="title">Recuperar palavra-passe</h2>
+      <p class="subtitle">Introduz o teu e-mail. Se existir conta associada, enviamos um link para criares uma nova palavra-passe.</p>
+
+      <form id="recoverForm" novalidate>
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required />
+        <div id="emailErr" class="error" aria-live="polite">Introduz um e-mail válido.</div>
+
+        <button type="submit" class="btn">Enviar link de recuperação</button>
+
+        <div id="okMsg" class="msg ok" role="status" aria-live="polite">
+          Se o e-mail existir, o link de recuperação foi enviado. Verifica também a pasta de spam.
+        </div>
+        <div id="errMsg" class="msg err" role="alert" aria-live="assertive">
+          Ocorreu um erro inesperado. Tenta novamente em alguns segundos.
+        </div>
+
+        <p class="muted">Lembraste da password? <a href="login.html">Entrar</a></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="main.js" defer></script>
+  <script>
+    const form = document.getElementById('recoverForm');
+    const emailErr = document.getElementById('emailErr');
+    const okMsg = document.getElementById('okMsg');
+    const errMsg = document.getElementById('errMsg');
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      okMsg.style.display = 'none';
+      errMsg.style.display = 'none';
+      emailErr.style.display = 'none';
+
+      if(!form.email.checkValidity()){
+        emailErr.style.display = 'block';
+        return;
+      }
+
+      // Simulação de pedido num site estático.
+      // Integra aqui o teu backend (ex.: fetch('/api/reset', { method:'POST', body: JSON.stringify({email}) }))
+      // e mostra mensagens conforme a resposta.
+      setTimeout(()=>{
+        okMsg.style.display = 'block';
+      }, 500);
+    });
+
+    form.email.addEventListener('input', ()=> emailErr.style.display = 'none');
+  </script>
+</body>
+</html>
