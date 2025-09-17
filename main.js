@@ -108,18 +108,29 @@
 
   async function handleAuth() {
     if (!supabase) return;
-
-    const currentPage = window.location.pathname.split('/').pop();
-    const { data: { session } } = await supabase.auth.getSession(); // Obter a sessão inicial
-
-    // Page protection
-    if (currentPage === 'perfil.html' && !session) {
-      window.location.replace('login.html');
-      return; // Parar a execução para evitar erros
+ 
+    // Define quais páginas são protegidas e precisam de login
+    const protectedPages = ['perfil.html'];
+    // Define quais páginas são para utilizadores não-logados
+    const publicOnlyPages = ['login.html', 'Registro.html', 'recuperar_senha.html'];
+ 
+    const pathParts = window.location.pathname.split('/');
+    const currentPage = pathParts.pop() || 'index.html'; // Garante que a raiz (/) é tratada como index.html
+ 
+    const { data: { session } } = await supabase.auth.getSession();
+ 
+    // 1. Se o utilizador não está logado e está numa página protegida
+    if (!session && protectedPages.includes(currentPage)) {
+      // Guarda a página atual para redirecionar de volta após o login
+      const redirectTo = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.replace(`login.html?next=${redirectTo}`);
+      return; // Pára a execução para evitar que o resto do script da página corra
     }
-    if ((currentPage === 'login.html' || currentPage === 'Registro.html' || currentPage === 'recuperar_senha.html') && session) {
+ 
+    // 2. Se o utilizador está logado e está numa página de login/registo
+    if (session && publicOnlyPages.includes(currentPage)) {
       window.location.replace('perfil.html');
-      return; // Parar a execução
+      return; // Pára a execução
     }
 
     await updateAuthUI(session); // Atualiza a UI com a sessão inicial
@@ -127,7 +138,9 @@
     // Ouve por mudanças no estado de autenticação (login, logout, etc.)
     supabase.auth.onAuthStateChange(async (_event, session) => {
       await updateAuthUI(session);
-      if (_event === 'SIGNED_OUT' && currentPage === 'perfil.html') window.location.replace('index.html');
+      if (_event === 'SIGNED_OUT' && protectedPages.includes(currentPage)) {
+        window.location.replace('index.html');
+      }
     });
   }
 
