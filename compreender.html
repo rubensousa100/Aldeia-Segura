@@ -53,7 +53,7 @@
 
     /* ===== HERO ===== */
     .hero{
-      background:url('Imagens/Incendio20.jpg') center/cover no-repeat;
+      background:url('Imagens/incendio20.jpg') center/cover no-repeat;
       color:#fff;text-align:center;padding:3.2rem 1rem;position:relative
     }
     .hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.45)}
@@ -342,6 +342,41 @@
       </div>
     </div></div>
 
+    <!-- FAQ -->
+    <h3 id="faq">Perguntas Frequentes (FAQ)</h3>
+    <div class="accordion" id="faqAccordion">
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>O que é a "interface urbano-florestal" (IUF)?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel">
+          <p>É a zona de transição onde as casas e outras estruturas humanas se encontram ou misturam com a vegetação florestal. É uma área de risco acrescido porque os incêndios podem facilmente passar da floresta para as habitações, e vice-versa.</p>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Porque é que o vento é tão perigoso num incêndio?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel">
+          <p>O vento tem dois efeitos principais: 1) "Empurra" o fogo, fazendo-o avançar muito mais depressa, especialmente em encostas. 2) Transporta brasas (pavesas) a longas distâncias, que podem criar novos focos de incêndio (focos secundários) muito à frente da frente principal, cercando casas e dificultando o combate.</p>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Um incêndio de copas é pior que um incêndio de superfície?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel">
+          <p>Sim, significativamente. Um incêndio de superfície queima principalmente matos e vegetação rasteira. Um incêndio de copas avança pelas copas das árvores, libertando uma quantidade de energia muito superior, movendo-se mais depressa e tornando o combate direto quase impossível e muito perigoso.</p>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>O que significa "risco" e "perigo"? São a mesma coisa?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel">
+          <p>No contexto dos incêndios, não são. O <strong>perigo</strong> refere-se às características do fogo em si (a sua probabilidade de acontecer e a intensidade que pode atingir). O <strong>risco</strong> é o resultado desse perigo a afetar algo de valor (a vulnerabilidade). Por exemplo, uma floresta densa e seca tem um alto perigo, mas o risco só é elevado se houver casas, pessoas ou infraestruturas nessa área.</p>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Porque é que a limpeza do terreno à volta da casa é tão importante?</span><b class="acc-icon">+</b></button>
+        <div class="acc-panel">
+          <p>A limpeza cria uma "zona de defesa". Ao reduzir o combustível (matos, ervas secas, ramos baixos) numa faixa de pelo menos 50 metros, diminui-se a intensidade do fogo que se aproxima da casa. Isto dá uma oportunidade aos bombeiros para defenderem a habitação e reduz a probabilidade de a casa se incendiar por contacto direto com as chamas ou por radiação.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ARTIGOS -->
     <h3 id="artigos">Artigos científicos e leituras recomendadas</h3>
     <div class="card"><div class="body">
@@ -396,6 +431,19 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="main.js" defer></script>
+  <script>
+    // Acordeão para a secção de FAQ
+    document.getElementById('faqAccordion')?.addEventListener('click', e => {
+      const btn = e.target.closest('.acc-btn');
+      if (!btn) return;
+
+      const item = btn.parentElement;
+      const isOpen = item.classList.contains('open');
+
+      // Comportamento simples: apenas abre/fecha o item clicado
+      item.classList.toggle('open', !isOpen);
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  </script>
 </body>
 </html>
-
