@@ -183,6 +183,19 @@
     .report-header .status { font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 999px; background-color: #e9ecef; color: #495057; text-transform: capitalize; white-space: nowrap; }
     .report-details { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; }
     .report-details strong { color: #343a40; }
+    .report-header > div { /* Agrupa status e botão */
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .btn-delete-report {
+        background: transparent; border: none; cursor: pointer;
+        font-size: 1.1rem; color: #c62828;
+        padding: 0 .5rem; opacity: 0.6;
+        transition: opacity .2s;
+    }
+    .btn-delete-report:hover { opacity: 1; }
+
     .no-reports { color: var(--text-muted); text-align: center; padding: 2rem 1rem; border: 2px dashed var(--line); border-radius: var(--radius-md); background-color: #f8f9fa; }
 
     /* ===== Responsividade ===== */
@@ -519,7 +532,7 @@
           // Fetch the actual reports for the current page
           const { data: reports, error } = await supabase
               .from('relatos')
-              .select('when, lat, lng, status, seen')
+              .select('id, when, lat, lng, status, seen') // Adicionamos o 'id' para sabermos qual apagar
               .eq('user_id', userId)
               .order('when', { ascending: false })
               .range(from, to);
@@ -557,7 +570,10 @@
                   <li class="report-item">
                       <div class="report-header">
                           <span class="date">${reportDate}</span>
-                          <span class="status" style="background-color: ${color.bg}; color: ${color.text}; border: 1px solid ${color.text}22;">${status}</span>
+                          <div>
+                            <span class="status" style="background-color: ${color.bg}; color: ${color.text}; border: 1px solid ${color.text}22;">${status}</span>
+                            <button class="btn-delete-report" data-report-id="${report.id}" title="Apagar este relato">🗑️</button>
+                          </div>
                       </div>
                       <div class="report-details">
                           <strong>Localização:</strong> ${location}<br>
@@ -814,15 +830,11 @@
       });
  
       cancelBtn.addEventListener('click', () => {
+          // A forma mais limpa de cancelar é simplesmente repopular a UI
+          // com os dados originais que foram carregados. Isto restaura
+          // todos os campos e a localização para o seu estado inicial.
+          populateUI(initialProfileData);
           switchProfileView('view');
-
-          // Restore coordinates to their initial state before editing
-          const initialCoords = parseGeogString(initialProfileData?.geog);
-          if (initialCoords) {
-            currentCoords = initialCoords;
-          } else {
-            currentCoords = null;
-          }
       });
  
       useMyLocationBtn.addEventListener('click', () => {
@@ -963,30 +975,26 @@
           updateMessage.style.display = 'none'; // Esconde mensagens anteriores
           
           try {
-              // Prepara os dados para a atualização.
-              // O 'id' não é necessário no objeto de atualização, pois é usado na cláusula 'eq'.
-              const updates = {
-                  full_name: editNameInput.value.trim(),
-                  address: editAddressInput.value.trim(),
-                  postal_code: editPostalCodeInput.value.trim(),
-                  city: editCityInput.value.trim(),
-                  updated_at: new Date(),
-                  // Converte as coordenadas para o formato POINT do PostGIS, ou null se não houver.
-                  geog: currentCoords ? `POINT(${currentCoords.lng} ${currentCoords.lat})` : null,
-              };
-    
-              // Faz a atualização e, na mesma operação, pede ao Supabase para devolver
-              // a linha atualizada. Isto é mais eficiente (1 chamada à BD em vez de 2)
-              // e garante que os dados que mostramos são os mais recentes.
-              const { data: updatedProfile, error } = await supabase
-                  .from('profiles')
-                  .update(updates)
-                  .eq('id', session.user.id)
-                  .select('*, geog::text') // Retorna a linha atualizada, com a geografia como texto
-                  .single();
-    
+              // Em vez de usar .update() ou .upsert() diretamente, chamamos a função da base de dados (RPC)
+              // que criámos. Isto é mais robusto e contorna potenciais problemas de permissões (RLS).
+              const { data, error } = await supabase.rpc('update_profile_with_location', {
+                  p_user_id: session.user.id,
+                  p_full_name: editNameInput.value.trim(),
+                  p_address: editAddressInput.value.trim(),
+                  p_postal_code: editPostalCodeInput.value.trim(),
+                  p_city: editCityInput.value.trim(),
+                  p_location_wkt: currentCoords ? `POINT(${currentCoords.lng} ${currentCoords.lat})` : null
+              });
+
               if (error) { throw error; }
-    
+
+              // A função RPC devolve um array de resultados. Como só atualizámos um perfil,
+              // pegamos no primeiro (e único) elemento.
+              const updatedProfile = data && data.length > 0 ? data[0] : null;
+              if (!updatedProfile) {
+                  throw new Error("O perfil não foi encontrado após a atualização.");
+              }
+
               populateUI(updatedProfile);
               switchProfileView('view');
 
@@ -1013,6 +1021,43 @@
           // por detetar o evento 'SIGNED_OUT' numa página protegida e redirecionar para 'index.html'.
           // Isto centraliza a lógica e resolve problemas de "race condition".
           await supabase.auth.signOut();
+      });
+
+      // Listener para apagar relatos (usando delegação de eventos)
+      // Este listener é adicionado aqui dentro para ter acesso à variável `supabase` inicializada.
+      document.getElementById('reportsContainer').addEventListener('click', async (e) => {
+          const deleteBtn = e.target.closest('.btn-delete-report');
+          if (!deleteBtn) return;
+
+          const reportId = deleteBtn.dataset.reportId;
+          if (!reportId) return;
+
+          if (confirm('Tem a certeza que quer apagar este relato? Esta ação é irreversível.')) {
+              try {
+                  // Desativa o botão para evitar cliques duplos
+                  deleteBtn.disabled = true;
+
+                  const { error } = await supabase
+                      .from('relatos')
+                      .delete()
+                      .eq('id', reportId);
+
+                  if (error) throw error;
+
+                  // Remove o item da UI com uma animação suave
+                  const reportItem = deleteBtn.closest('.report-item');
+                  if (reportItem) {
+                      reportItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                      reportItem.style.opacity = '0';
+                      reportItem.style.transform = 'translateX(-20px)';
+                      setTimeout(() => reportItem.remove(), 300);
+                  }
+              } catch (error) {
+                  console.error('Erro ao apagar relato:', error);
+                  alert('Não foi possível apagar o relato: ' + error.message);
+                  deleteBtn.disabled = false; // Reativa o botão em caso de erro
+              }
+          }
       });
     });
   </script>
