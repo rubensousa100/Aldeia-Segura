@@ -142,10 +142,11 @@
       submitBtn.textContent = 'A enviar...';
 
       // O Supabase envia um e-mail com um link. Após o utilizador redefinir a senha,
-      // será redirecionado para a página de perfil.
-      // A URL base é retirada da configuração do Supabase (Site URL).
+      // será redirecionado para a página de perfil. Para garantir que funciona sempre,
+      // fornecemos o URL absoluto, em vez de depender da "Site URL" configurada no Supabase.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'perfil.html', // Caminho relativo à Site URL
+        // Após a redefinição, o utilizador é enviado para a página de perfil.
+        redirectTo: `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'perfil.html')}`,
       });
 
       submitBtn.disabled = false;
