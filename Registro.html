@@ -325,6 +325,9 @@
         email: email,
         password: password,
         options: {
+          // Adiciona um redirecionamento explícito para a página de perfil após a confirmação do e-mail.
+          // Isto evita problemas se a "Site URL" no Supabase não estiver configurada corretamente.
+          emailRedirectTo: `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'perfil.html')}`,
           data: {
             full_name: form.nome.value.trim(),
             address: form.morada.value.trim(),
