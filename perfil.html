@@ -963,29 +963,29 @@
           updateMessage.style.display = 'none'; // Esconde mensagens anteriores
           
           try {
+              // Prepara os dados para a atualização.
+              // O 'id' não é necessário no objeto de atualização, pois é usado na cláusula 'eq'.
               const updates = {
-                  id: session.user.id, // Importante para o upsert
                   full_name: editNameInput.value.trim(),
                   address: editAddressInput.value.trim(),
                   postal_code: editPostalCodeInput.value.trim(),
                   city: editCityInput.value.trim(),
                   updated_at: new Date(),
+                  // Converte as coordenadas para o formato POINT do PostGIS, ou null se não houver.
                   geog: currentCoords ? `POINT(${currentCoords.lng} ${currentCoords.lat})` : null,
               };
     
-              // Passo 1: Fazer o UPSERT.
-              // O upsert insere uma nova linha se não existir, ou atualiza se já existir.
-              const { error: upsertError } = await supabase
+              // Faz a atualização e, na mesma operação, pede ao Supabase para devolver
+              // a linha atualizada. Isto é mais eficiente (1 chamada à BD em vez de 2)
+              // e garante que os dados que mostramos são os mais recentes.
+              const { data: updatedProfile, error } = await supabase
                   .from('profiles')
-                  .upsert(updates, { onConflict: 'id' });
+                  .update(updates)
+                  .eq('id', session.user.id)
+                  .select('*, geog::text') // Retorna a linha atualizada, com a geografia como texto
+                  .single();
     
-              if (upsertError) { throw upsertError; }
-    
-              // Passo 2: Se o upsert correu bem, ir buscar o perfil completo e atualizado.
-              const { data: updatedProfile, error: selectError } = await supabase
-                  .from('profiles').select('*, geog::text').eq('id', session.user.id).single();
-    
-              if (selectError) { throw selectError; }
+              if (error) { throw error; }
     
               populateUI(updatedProfile);
               switchProfileView('view');
