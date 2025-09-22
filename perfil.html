@@ -292,6 +292,7 @@
           <p id="userEmail">—</p>
         </div>
         <div class="profile-actions">
+          <a id="adminDashboardBtn" href="admin.html" class="btn" style="display: none; background-color: #f9a825; border-color: #f57f17; color: #fff;">Painel Admin</a>
           <button id="editBtn" class="btn primary" type="button">Editar</button>
           <button id="changePassBtn" class="btn secondary" type="button">Alterar Palavra-passe</button>
           <button id="logoutBtn" class="btn secondary" type="button" title="Terminar Sessão">Sair</button>
@@ -720,6 +721,12 @@
               userLocationEl.textContent = 'Não definida';
           }
  
+          // Mostra o botão de admin se o utilizador tiver o papel 'admin'
+          const adminBtn = document.getElementById('adminDashboardBtn');
+          if (adminBtn && profile?.role === 'admin') {
+            adminBtn.style.display = 'inline-flex';
+          }
+
           viewMode.setAttribute('aria-busy', 'false');
       }
  
