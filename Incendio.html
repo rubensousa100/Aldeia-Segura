@@ -349,6 +349,7 @@ footer{
                   <label class="ffr-chip">
                       <input type="checkbox" id="ffr-chamas-only"> <span>Só com chamas</span>
                   </label>
+                  <button class="ffr-btn-sm refresh-btn" id="ffr-refresh-map">Atualizar Mapa</button>
                   <span id="ffr-loading" class="ffr-badge">A carregar…</span>
               </div>
               <div class="ffr-panel-group">
@@ -372,8 +373,8 @@ footer{
           </div>
           <div class="ffr-chips">
             <label class="ffr-chip"><input type="checkbox" name="seen" value="fumo"> <span>Fumo</span></label>
-            <label class="ffr-chip"><input type="checkbox" name="seen" value="chamas"> <span>Chamas visíveis</span></label>
-            <label class="ffr-chip"><input type="checkbox" name="seen" value="brasas"> <span>Pavesas/brasas no ar</span></label>
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="chamas"> <span>Chamas visíveis</span></label> 
+            <label class="ffr-chip"><input type="checkbox" name="seen" value="fagulhas"> <span>Fagulhas no ar</span></label>
             <label class="ffr-chip"><input type="checkbox" name="seen" value="cheiro"> <span>Cheiro intenso a fumo</span></label>
             <label class="ffr-chip"><input type="checkbox" name="seen" value="cinzas"> <span>Queda de cinzas</span></label>
           </div>
@@ -482,7 +483,7 @@ footer{
 
         <div class="ffr-block">
           <div class="ffr-block-head">
-            <h4>Exposição & pavesas</h4><p class="ffr-sub">Casas em risco e focos secundários</p>
+            <h4>Exposição & Fagulhas</h4><p class="ffr-sub">Casas em risco e focos secundários</p>
           </div>
           <div class="ffr-grid-2">
             <div>
@@ -816,7 +817,7 @@ footer{
             <li><b>Cor do fumo:</b> ${smoke} | <b>Chamas:</b> ${flame} | <b>Velocidade:</b> ${rate}</li>
             <li><b>Avanço:</b> ${dir} | <b>Vento:</b> ${wind} (${winddir})</li>
             <li><b>Terreno:</b> ${slope} | <b>Combustível:</b> ${fuel}</li>
-            <li><b>Pavesas:</b> ${spot} | <b>Exposição:</b> ${expo}</li>
+            <li><b>Fagulhas:</b> ${spot} | <b>Exposição:</b> ${expo}</li>
             <li><b>Estado:</b> ${status} | <b>Ações:</b> ${act}</li>
             <li><b>Confiança:</b> ${conf}/5</li>
             <li><b>Ficheiros:</b> ${fnames}</li>
@@ -915,9 +916,10 @@ footer{
         okToast.style.display = 'flex';
         okToast.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        if (gridLayer || rawLayer) {
-          await showGrid(true); // Atualiza o mapa colaborativo se já estiver visível
-        }
+        // Atualização otimista: Adiciona o ponto ao mapa localmente sem esperar pelo próximo refresh.
+        // Isto garante que o utilizador vê o seu próprio ponto instantaneamente.
+        const newPoint = { type: 'Feature', properties: { score_max: scoreOf(data) }, geometry: { type: 'Point', coordinates: [data.coords.lng, data.coords.lat] } };
+        addPointToMap(newPoint);
       } catch (err) {
         // Se algo falhou, mostrar a mensagem de erro exata.
         console.error('Erro ao submeter o relato:', err);
@@ -961,11 +963,21 @@ footer{
       return data;
     }
     function scoreOf(r){
-      let s = 0;
-      if (r.smoke && r.smoke !== '—') s += 1;
-      if (r.flame && r.flame !== 'sem') s += 2;
-      if (r.rate  && r.rate  !== 'lenta') s += (r.rate==='moderada'?1: (r.rate==='rapida'?2:3));
-      return Math.min(5, s);
+        let s = 0;
+        // Fumo (0-2 pontos)
+        if (r.smoke === 'cinzento') s += 1;
+        else if (r.smoke === 'negro' || r.smoke === 'castanho') s += 2;
+
+        // Chamas (0-3 pontos)
+        if (r.flame === '0.5-2') s += 1;
+        else if (r.flame === '2-4') s += 2;
+        else if (r.flame === '>4') s += 3;
+
+        // Velocidade (0-2 pontos)
+        if (r.rate === 'rapida') s += 1;
+        else if (r.rate === 'muito-rapida') s += 2;
+
+        return Math.min(7, s); // A pontuação máxima teórica é 7
     }
     function rowsToGridGeoJSON(rows, cellDeg=0.01){
       const keyOf = (la,ln)=>`${Math.round(la/cellDeg)*cellDeg},${Math.round(ln/cellDeg)*cellDeg}`;
@@ -995,11 +1007,31 @@ footer{
       };
     }
     function colorForScore(s){
-      if(s>=4) return '#e53935';
-      if(s>=3) return '#fb8c00';
-      if(s>=2) return '#fdd835';
-      if(s>0)  return '#7cb342';
-      return '#cfd8dc';
+      if(s >= 6) return '#e53935'; // Muito Alta
+      if(s >= 4) return '#fb8c00'; // Alta
+      if(s >= 2) return '#fdd835'; // Média
+      if(s > 0)  return '#7cb342'; // Baixa
+      return '#cfd8dc'; // Nula
+    }
+    
+    // Função para adicionar um ponto ao mapa colaborativo (para atualização otimista)
+    function addPointToMap(feature) {
+        if (!collabMap || !gridLayer) {
+            // Se o mapa ainda não foi inicializado, força uma atualização completa
+            showGrid(true);
+            return;
+        }
+
+        const s = feature.properties.score_max || 0;
+        const c = colorForScore(s);
+        const marker = L.circleMarker(feature.geometry.coordinates.slice().reverse(), { // L.circleMarker espera [lat, lng]
+            radius: 8,
+            fillColor: c,
+            color: c === '#fdd835' ? '#666' : '#455a64',
+            weight: 1,
+            fillOpacity: 0.75
+        }).bindTooltip(`<b>Seu novo relato</b><br>Perigosidade: ${s}`);
+        gridLayer.addLayer(marker);
     }
 
     function initCollabMap() {
@@ -1014,12 +1046,12 @@ footer{
             collabLegend.onAdd = function (map) {
                 const div = L.DomUtil.create('div', 'legend-collab');
                 div.innerHTML = `
-                    <h4>Perigosidade (score)</h4>
-                    <div><i style="background: #e53935"></i> ≥ 4 (Muito Alta)</div>
-                    <div><i style="background: #fb8c00"></i> ≥ 3 (Alta)</div>
-                    <div><i style="background: #fdd835; border-color: #ccc;"></i> ≥ 2 (Média)</div>
-                    <div><i style="background: #7cb342"></i> > 0 (Baixa)</div>
-                    <div><i style="background: #cfd8dc"></i> 0 (Nula)</div>
+                    <h4>Perigosidade</h4>
+                    <div><i style="background: #e53935"></i> Muito Alta</div>
+                    <div><i style="background: #fb8c00"></i> Alta</div>
+                    <div><i style="background: #fdd835; border-color: #ccc;"></i> Média</div>
+                    <div><i style="background: #7cb342"></i> Baixa</div>
+                    <div><i style="background: #cfd8dc"></i> Nula</div>
                 `;
                 return div;
             };
@@ -1083,6 +1115,9 @@ footer{
     $('#ffr-minutes').addEventListener('change', () => showGrid(true));
     $('#ffr-celldeg').addEventListener('change', () => showGrid(true));
     $('#ffr-chamas-only').addEventListener('change', () => showGrid(true));
+    $('#ffr-refresh-map').addEventListener('click', () => {
+        showGrid(true);
+    });
 
     setInterval(()=>{ if(collabMap && gridLayer){ showGrid(true); } }, 120000); // Atualiza a cada 2 minutos
     $('#ffr-export-json').addEventListener('click', async ()=>{
