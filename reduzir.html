@@ -476,6 +476,18 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="main.js" defer></script>
+  <script>
+    // Acordeão para a secção de FAQ
+    document.getElementById('acc')?.addEventListener('click', e => {
+      const btn = e.target.closest('.acc-btn');
+      if (!btn) return;
+
+      const item = btn.parentElement;
+      const isOpen = item.classList.contains('open');
+
+      item.classList.toggle('open', !isOpen);
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  </script>
 </body>
 </html>
-
