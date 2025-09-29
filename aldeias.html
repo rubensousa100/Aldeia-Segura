@@ -6,8 +6,6 @@
   <title>Aldeia Segura | Aldeias Seguras Pessoas Seguras</title>
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Base para links relativos funcionarem no GitHub Pages -->
-  <base href="/Aldeia-Segura/">
   <link rel="stylesheet" href="main.css" />
   <!-- Variáveis do Supabase -->
   <script>
@@ -446,6 +444,9 @@
   <div class="stat-box"><h3>🏠 1550</h3><p>Locais de abrigo</p></div>
   <div class="stat-box"><h3>⛺ 1522</h3><p>Locais de refúgio</p></div>
 </section>
+<p class="small muted" style="text-align: center; margin-top: -1.5rem; margin-bottom: 2rem;">
+  Dados de 27 de Fevereiro de 2025
+</p>
 
 <section class="fichas" id="fichas">
   <h3>Fichas das Aldeias</h3>
@@ -499,6 +500,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', function(){
+  const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+  // Função para verificar se o utilizador é admin e mostrar os controlos
+  async function checkAdminAndShowControls() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+          return; // Não está logado, não faz nada
+      }
+
+      const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+      if (error && error.code !== 'PGRST116') {
+          console.error('Erro ao obter o perfil:', error);
+          return;
+      }
+
+      if (profile?.role === 'admin') {
+          document.querySelectorAll('[data-admin-only]').forEach(el => el.style.display = 'inline-flex');
+      }
+  }
   // ---------- CONFIG ----------
   var PATH_FREG = 'Shapfiles2/FreguesiasArcos.json';
   var PATH_ALD  = 'Shapfiles2/AldeiasSeguras.json';
@@ -518,7 +543,7 @@ window.addEventListener('DOMContentLoaded', function(){
     "Espaços descobertos ou com pouca vegetação": "#d9d9d9",
     "Massas de água superficiais": "#0000ff"
   };
-
+  
   let GJ_REDE=null, GJ_EDIF=null, GJ_AR=null, GJ_OCUP=null;
 
   const DATA_ALDEIAS = [
@@ -824,7 +849,7 @@ window.addEventListener('DOMContentLoaded', function(){
       var mm=L.map(el,{attributionControl:false,zoomControl:false}).setView([lat,lng],16);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(mm);
       L.circle([lat,lng], {radius:3, color:'#ff6f00', weight:3}).addTo(mm);
-      var circlePoly=null; try{ if(window.turf){ circlePoly=turf.circle([lng,lat],0.1,{steps:64,units:'kilometers'}); L.geoJSON(circlePoly,{style:{color:'#3a7d44',weight:1,fillOpacity:0.05}}).addTo(mm);} else { L.circle([lat,lng],{radius:100,color:'#3a7d44',weight:1,fillOpacity:0.05}).addTo(mm);} }catch(e){}
+      var circlePoly=null; try{ if(window.turf){ circlePoly=turf.circle([lng,lat],0.25,{steps:64,units:'kilometers'}); L.geoJSON(circlePoly,{style:{color:'#3a7d44',weight:1,fillOpacity:0.05}}).addTo(mm);} else { L.circle([lat,lng],{radius:250,color:'#3a7d44',weight:1,fillOpacity:0.05}).addTo(mm);} }catch(e){}
       MINI_REG.push({map:mm,lat:lat,lng:lng,circlePoly:circlePoly, el:el, layers:{}});
       tryRenderMiniLayers();
       setTimeout(function(){ mm.invalidateSize(); },50);
@@ -891,7 +916,7 @@ window.addEventListener('DOMContentLoaded', function(){
       </summary>\
       <div class="ficha-inner">\
         <div class="grid">\
-          <div class="box">\
+          <div class="box" style="display: flex; flex-direction: column; justify-content: space-between;">\
             <h5>Dados oficiais (só leitura)</h5>\
             <div class="meta">\
               '+(abrigos!=null?'<div><b>Abrigos (n.º):</b> '+abrigos+'</div>':'')+'\
@@ -904,15 +929,15 @@ window.addEventListener('DOMContentLoaded', function(){
             '+(foto?'<img class="aldeia-photo" src="'+foto+'" alt="Foto de '+nome+'" onerror="this.style.display=\'none\'">':'<img class="aldeia-photo" src="Imagens/Aldeias/'+id.replace('aldeia-','')+'.jpg" alt="Foto de '+nome+'" onerror="this.style.display=\'none\'">')+'\
           </div>\
           <div class="box">\
-            <h5>Mapa de localização (buffer 100 m)</h5>\
+            <h5>Mapa de localização (buffer 250 m)</h5>\
             <div class="mini-controls">\
-              <label><input type="checkbox" data-mini-layer="ocup" checked> Ocup. do solo</label>\
+              <label><input type="checkbox" data-mini-layer="ocup"> Ocup. do solo</label>\
               <label><input type="checkbox" data-mini-layer="rede" checked> Rede viária</label>\
               <label><input type="checkbox" data-mini-layer="edif" checked> Edifícios</label>\
               <label><input type="checkbox" data-mini-layer="ar" checked> Abrigos/Refúgios</label>\
             </div>\
             <div class="mini-map" data-lat="'+lat+'" data-lng="'+lng+'"></div>\
-            <p class="small muted" style="margin:.5rem 0 0;">Mostra camadas dentro do buffer de 100 m. Pode ligar/desligar em cima.</p>\
+            <p class="small muted" style="margin:.5rem 0 0;">Mostra camadas dentro do buffer de 250 m. Pode ligar/desligar em cima.</p>\
           </div>\
         </div>\
         <div class="info-comments">\
@@ -992,7 +1017,7 @@ window.addEventListener('DOMContentLoaded', function(){
           <!-- DIREITA: Comentários / Problemas -->\
           <details class="comments-wrap">\
             <summary class="btn">Comentários / Problemas</summary>\
-            <div class="box">\
+            <div class="box" style="margin-top:.6rem;">\
               <p class="small muted">Reporte problemas locais (ex.: sinalização partida, falta de limpeza, vegetação a invadir caminhos, iluminação avariada). Os dados são enviados para o servidor ao clicar em "Submeter comentários".</p>\
               <div class="comment-form">\
                 <div class="row">\
@@ -1018,7 +1043,7 @@ window.addEventListener('DOMContentLoaded', function(){
                 <div class="comment-actions">\
                   <button class="btn" data-add-comment="'+id+'">Adicionar comentário</button>\
                   <button class="btn" data-submit-comments="'+id+'">Submeter comentários</button>\
-                  <button class="btn" data-export-comments="'+id+'">Exportar JSON</button>\
+                  <button class="btn" data-export-comments="'+id+'" data-admin-only style="display: none;">Exportar JSON</button>\
                   <label class="btn" style="cursor:pointer;">\
                     Importar JSON\
                     <input type="file" accept="application/json" data-import-comments="'+id+'" style="display:none">\
@@ -1096,8 +1121,22 @@ window.addEventListener('DOMContentLoaded', function(){
     const stylePoly={color:'#d32f2f', weight:2, fillOpacity:0.15};
     const pointTo = (f,latlng) => L.circleMarker(latlng,{radius:6,color:'#fff',weight:1,fillColor:'#d32f2f',fillOpacity:0.95});
     const asGeo=(gj && gj.type==='FeatureCollection')? gj : {type:'FeatureCollection', features:(gj && gj.features)||[]};
-    layerAR = L.geoJSON(asGeo,{ pointToLayer:pointTo, style:() => stylePoly,
-      onEachFeature:(f,l) => { const P=f.properties||{}; const nome=prefer(P,['Nome','Designacao','DESIG','NOME'],'Abrigo/Refúgio'); const extra=prefer(P,['Cap','capacidade','Capacidade','Pavimento','Material','Tipo','Notas','OBS'],''); l.bindPopup('<b>'+nome+'</b>'+(extra?'<br>'+extra:'')); l.bindTooltip(nome,{direction:'top'}); }
+    layerAR = L.geoJSON(asGeo, { // Abrigos/Refúgios
+      pointToLayer: pointTo,
+      style: () => stylePoly,
+      onEachFeature: (f, l) => {
+        const P = f.properties || {};
+        const nome = prefer(P, ['name', 'Name', 'NAME', 'Nome', 'Designacao', 'DESIG', 'NOME'], 'Abrigo/Refúgio');
+        const tipo = prefer(P, ['Tipo', 'tipo', 'TIPO', 'FUNCAO', 'funcao', 'Funcao', 'name', 'Name', 'NAME'], ''); // Procurar pelo tipo, incluindo 'name' como fallback
+        const extra = prefer(P, ['Cap', 'capacidade', 'Capacidade', 'Pavimento', 'Material', 'Notas', 'OBS'], ''); // Outros detalhes (sem o tipo)
+        
+        let popupContent = `<b>${nome}</b>`;
+        if (tipo) popupContent += `<br><em>Tipo: ${tipo}</em>`; // Adiciona o tipo em itálico
+        if (extra) popupContent += `<br>${extra}`; // Adiciona o resto da informação
+
+        l.bindPopup(popupContent);
+        l.bindTooltip(nome, { direction: 'top' });
+      }
     });
     return layerAR;
   });
@@ -1108,7 +1147,7 @@ window.addEventListener('DOMContentLoaded', function(){
     GJ_OCUP = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
     return GJ_OCUP;
   });
-
+  
   // Controlos do mapa principal
   Promise.all([pF,pA,pRede,pEdif,pAR,pOcup]).then(() => {
     const overlays = {};
@@ -1124,6 +1163,7 @@ window.addEventListener('DOMContentLoaded', function(){
     if(layerAR) layerAR.addTo(map);
     try{ if(layerFreg) map.fitBounds(layerFreg.getBounds(), {padding:[20,20]}); }catch(e){}
     tryRenderMiniLayers();
+    checkAdminAndShowControls(); // Verifica se é admin para mostrar os botões
     openFromHash();
   });
 
@@ -1228,7 +1268,19 @@ window.addEventListener('DOMContentLoaded', function(){
         const fc3=intersectFC(GJ_AR,circlePoly);
         if(fc3 && fc3.features.length) rec.layers.ar = L.geoJSON(fc3,{
           pointToLayer:(f,latlng) => L.circleMarker(latlng,{radius:5,color:'#fff',weight:1,fillColor:'#d32f2f',fillOpacity:0.95}),
-          style:{color:'#d32f2f', weight:2, fillOpacity:0.15}
+          style:{color:'#d32f2f', weight:2, fillOpacity:0.15},
+          onEachFeature: (f, l) => { // Adicionado para popups no mini-mapa
+            const P = f.properties || {};
+            const nome = prefer(P, ['name', 'Name', 'NAME', 'Nome', 'Designacao', 'DESIG', 'NOME'], 'Abrigo/Refúgio');
+            const tipo = prefer(P, ['Tipo', 'tipo', 'TIPO', 'FUNCAO', 'funcao', 'Funcao', 'name', 'Name', 'NAME'], '');
+            const extra = prefer(P, ['Cap', 'capacidade', 'Capacidade', 'Pavimento', 'Material', 'Notas', 'OBS'], '');
+            
+            let popupContent = `<b>${nome}</b>`;
+            if (tipo) popupContent += `<br><em>Tipo: ${tipo}</em>`;
+            if (extra) popupContent += `<br>${extra}`;
+
+            l.bindPopup(popupContent);
+          }
         });
       }
 
