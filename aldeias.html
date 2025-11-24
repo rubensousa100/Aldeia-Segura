@@ -85,22 +85,13 @@
 
   /* Mapa */
   #map{
-    height:540px; width:80%; margin:2rem auto 0;
+    height:540px; width:80%; margin:2rem auto 2rem; /* Aumentei a margem inferior */
     border:2px solid #ccc; border-radius:10px; position:relative;
   }
   #map .leaflet-top{ top:14px; }
   #map .leaflet-left{ left:12px; }
   #map .leaflet-right{ right:12px; }
   #map .leaflet-control{ box-shadow:0 2px 6px rgba(0,0,0,.12); }
-
-  /* Legenda fora do mapa */
-  .legend{
-    position:static; display:flex; gap:1rem; justify-content:center;
-    flex-wrap:wrap; background:#fff;
-    border:1px solid #ddd; border-radius:8px; box-shadow:var(--shadow);
-    padding:.6rem .9rem; margin:.75rem auto 1.5rem; width:fit-content;
-  }
-  .legend .row{ display:flex; align-items:center; gap:.45rem; margin:.1rem 0; }
   .chip{ width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid #999; }
   .chip.road{ background:#777; }
   .chip.build{ background:#ff69b4; }
@@ -168,11 +159,12 @@
   .ficha-inner{ padding:1rem 1.25rem 1rem 1.1rem; border-top:1px solid var(--line); }
 
   .grid{ display:grid; grid-template-columns:1.2fr 1fr; gap:1rem; }
+  .grid > .box { vertical-align: top; } /* Alinha caixas ao topo */
   .box{
     border:1px solid var(--line); border-radius:10px; padding:1rem 1.1rem; background:#fff;
-  }
+  } 
   .box h5{ margin:.1rem 0 .6rem; color:#2e7d32; font-size:1rem; }
-  .mini-map{ height:220px; border-radius:8px; border:1px solid #ddd; }
+  .mini-map{ height:220px; border-radius:8px; border:1px solid #ddd; overflow: hidden; }
 
   .mini-controls{ display:flex; flex-wrap:wrap; gap:.6rem; margin:.2rem 0 .6rem; font-size:.9rem; }
   .mini-controls label{
@@ -238,7 +230,7 @@
 
   /* --- Formulários em Grelha (substitui table.clean) --- */
   .form-grid { display: flex; flex-direction: column; gap: .5rem; }
-  .form-grid-header {
+  .form-grid-header { 
     display: grid; gap: .8rem;
     padding: .5rem .8rem;
     background: #f3f8f3;
@@ -263,7 +255,7 @@
 
   /* Layouts de grelha para cada tipo de formulário */
   .pop-grid { grid-template-columns: minmax(120px, 2fr) minmax(60px, 0.8fr) minmax(60px, 0.8fr) minmax(150px, 2fr) minmax(150px, 3fr) auto; }
-  .osl-grid { grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto; }
+  .osl-grid { grid-template-columns: 1fr 1fr auto; }
   .prev-grid { grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.5fr) minmax(80px, 1fr) minmax(150px, 2fr) auto; }
   .sim-grid { grid-template-columns: minmax(100px, 1fr) minmax(200px, 3fr) minmax(100px, 1fr) auto; }
 
@@ -428,12 +420,6 @@
 <section class="hero"><h2>Localização das Aldeias Seguras</h2></section>
 
 <div id="map"></div>
-<div id="map-legend" class="legend" aria-live="polite">
-  <div class="row"><span class="chip aldeia"></span> Aldeias</div>
-  <div class="row"><span class="chip road"></span> Rede viária</div>
-  <div class="row"><span class="chip build"></span> Edifícios</div>
-  <div class="row"><span class="chip ar"></span> Abrigos/Refúgios</div>
-</div>
 <div class="toast" id="toast"></div>
 
 <section class="stats">
@@ -530,11 +516,17 @@ window.addEventListener('DOMContentLoaded', function(){
   var PATH_REDE = 'Shapfiles2/RedeViaria.json';
   var PATH_EDIF = 'Shapfiles2/Edificios.json';
   var PATH_AR   = 'Shapfiles2/AbrigosRefugios.json';
+  // NOVAS CAMADAS
+  var PATH_OCUP = 'Shapfiles/OcupacaoSolo.json'; // Ocupação do Solo
+  var PATH_DECLIVE = 'Shapfiles/Declives.json'; // Declive
+  var PATH_PERIGOSIDADE = 'Shapfiles/Perigosidade.json'; // Perigosidade
+  var PATH_ARDIDA = 'Shapfiles/AreaArdida.json'; // Área Ardida
 
-  // NOVO: Ocupação do Solo
-  var PATH_OCUP = 'Shapfiles/OcupacaoSolo.json';
-  var KEY_OCUP  = 'COS18n1_L';
-  var OCUP_COLORS = {
+  let GJ_REDE=null, GJ_EDIF=null, GJ_AR=null, GJ_OCUP=null, GJ_DECLIVE=null, GJ_PERIGOSIDADE=null, GJ_ARDIDA=null;
+
+  // --- Definições para as Legendas ---
+  const KEY_OCUP = 'COS18n1_L';
+  const OCUP_COLORS = {
     "Territórios artificializados": "#ff0000",
     "Agricultura": "#ffff00",
     "Pastagens": "#ff7f00",
@@ -543,8 +535,41 @@ window.addEventListener('DOMContentLoaded', function(){
     "Espaços descobertos ou com pouca vegetação": "#d9d9d9",
     "Massas de água superficiais": "#0000ff"
   };
-  
-  let GJ_REDE=null, GJ_EDIF=null, GJ_AR=null, GJ_OCUP=null;
+  const OCUP_ORDER = [ "Territórios artificializados", "Agricultura", "Pastagens", "Florestas", "Matos", "Espaços descobertos ou com pouca vegetação", "Massas de água superficiais" ];
+
+  const KEY_DECLIVE = 'gridcode';
+  const SLP_CLASS_NAME = { 1: '0-5%', 2: '5-15%', 3: '15-25%', 4: '25-35%', 5: '35-45%', 6: '>45%' };
+  const SLP_COLORS = { 1: '#2DC800', 2: '#96FF00', 3: '#FFFF00', 4: '#FFAA00', 5: '#FF5500', 6: '#FF0000' };
+
+  const KEY_PERIGOSIDADE = 'gridcode';
+  const PERI_CLASS_NAME = { 1: 'Muito Baixa', 2: 'Baixa', 3: 'Moderada', 4: 'Elevada', 5: 'Muito Elevada' };
+  const PERI_COLORS = { 1: '#00A600', 2: '#96FF00', 3: '#FFFF00', 4: '#FFAA00', 5: '#FF0000' };
+
+  const KEY_ARDIDA = 'gridcode';
+  const ARDIDA_CLASS_NAME = { 1: 'Área Ardida' };
+  const ARDIDA_COLORS = { 1: '#730000' };
+
+  // Estilos das legendas (semelhante à página Explorar)
+  const legendStyles = `
+  .legend-control { background: #fff; padding: .6rem .8rem; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.2); line-height: 1.4; }
+  .legend-control h4 { font-size: 1rem; margin: 0 0 .5rem; color: #333; }
+  .legend-control .legend-item { display: flex; align-items: center; margin-bottom: .3rem; font-size: .9rem; }
+  .legend-control .legend-item i { width: 16px; height: 16px; margin-right: .5rem; border-radius: 4px; border: 1px solid #ccc; }
+
+  .mini-legend-details { border: 1px solid #e0e0e0; border-radius: 8px; margin-top: .75rem; background: #f9fafb; }
+  .mini-legend-details summary { cursor: pointer; padding: .6rem .9rem; font-weight: 600; color: #374151; display: flex; justify-content: space-between; align-items: center; list-style: none; }
+  .mini-legend-details summary::-webkit-details-marker { display: none; }
+  .mini-legend-details summary::after { content: '▶'; font-size: .8em; margin-left: .5rem; transition: transform .2s; color: #6b7280; }
+  .mini-legend-details[open] > summary { border-bottom: 1px solid #e0e0e0; }
+  .mini-legend-details[open] > summary::after { transform: rotate(90deg); }
+  .mini-legend-body { padding: .8rem .9rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+  .mini-legend-body .legend-item { display: flex; align-items: center; gap: .6rem; font-size: .875rem; }
+  .mini-legend-body .legend-item i { width: 15px; height: 15px; border-radius: 3px; border: 1px solid #ccc; }
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.textContent = legendStyles;
+  document.head.appendChild(styleEl);
+  // --- Fim das Definições ---
 
   const DATA_ALDEIAS = [
     { nome:'Ínsuas', freguesia:'Soajo', abrigos:null, refugios:null, exercicios:null, osl:'Sim', plano:'Não' },
@@ -634,6 +659,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // -------- MAPA PRINCIPAL --------
   const map = L.map('map').setView([41.9,-8.4],10);
   const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  L.control.scale({ imperial: false }).addTo(map); // Adiciona a escala
 
   map.on('popupopen', e => {
     const el = e.popup && e.popup.getElement && e.popup.getElement();
@@ -847,9 +873,10 @@ window.addEventListener('DOMContentLoaded', function(){
       if(!entry.isIntersecting) return; var el=entry.target; if(el.dataset.done) return; el.dataset.done='1';
       var lat=parseFloat(el.dataset.lat), lng=parseFloat(el.dataset.lng);
       var mm=L.map(el,{attributionControl:false,zoomControl:false}).setView([lat,lng],16);
+      L.control.scale({ imperial: false }).addTo(mm); // Adiciona a escala
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(mm);
-      L.circle([lat,lng], {radius:3, color:'#ff6f00', weight:3}).addTo(mm);
-      var circlePoly=null; try{ if(window.turf){ circlePoly=turf.circle([lng,lat],0.25,{steps:64,units:'kilometers'}); L.geoJSON(circlePoly,{style:{color:'#3a7d44',weight:1,fillOpacity:0.05}}).addTo(mm);} else { L.circle([lat,lng],{radius:250,color:'#3a7d44',weight:1,fillOpacity:0.05}).addTo(mm);} }catch(e){}
+      L.circle([lat,lng], {radius:3, color:'#ff6f00', weight:3}).addTo(mm); // Ponto central da aldeia
+      var circlePoly=null; try{ if(window.turf){ circlePoly=turf.circle([lng,lat],0.25,{steps:64,units:'kilometers'}); L.geoJSON(circlePoly,{style:{color:'#3a7d44',weight:2,fillOpacity:0.05}}).addTo(mm);} else { L.circle([lat,lng],{radius:250,color:'#3a7d44',weight:2,fillOpacity:0.05}).addTo(mm);} }catch(e){}
       MINI_REG.push({map:mm,lat:lat,lng:lng,circlePoly:circlePoly, el:el, layers:{}});
       tryRenderMiniLayers();
       setTimeout(function(){ mm.invalidateSize(); },50);
@@ -868,8 +895,8 @@ window.addEventListener('DOMContentLoaded', function(){
   }
   function formRowOSLTpl(){
     return '<div class="form-grid-row osl-grid">\
-      <input type="text" placeholder="Nome do OSL"/>\
-      <input type="text" placeholder="Contacto"/>\
+      <input type="text" placeholder="Nome completo do OSL"/>\
+      <input type="tel" placeholder="Número de telemóvel" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, \'\');"/>\
       <button class="btn" data-del-row>Remover</button>\
     </div>';
   }
@@ -916,8 +943,8 @@ window.addEventListener('DOMContentLoaded', function(){
       </summary>\
       <div class="ficha-inner">\
         <div class="grid">\
-          <div class="box" style="display: flex; flex-direction: column; justify-content: space-between;">\
-            <h5>Dados oficiais (só leitura)</h5>\
+          <div class="box" style="display: flex; flex-direction: column; justify-content: flex-start;">\
+            <h5>Dados oficiais</h5>\
             <div class="meta">\
               '+(abrigos!=null?'<div><b>Abrigos (n.º):</b> '+abrigos+'</div>':'')+'\
               '+(refugios!=null?'<div><b>Refúgios (n.º):</b> '+refugios+'</div>':'')+'\
@@ -932,11 +959,18 @@ window.addEventListener('DOMContentLoaded', function(){
             <h5>Mapa de localização (buffer 250 m)</h5>\
             <div class="mini-controls">\
               <label><input type="checkbox" data-mini-layer="ocup"> Ocup. do solo</label>\
-              <label><input type="checkbox" data-mini-layer="rede" checked> Rede viária</label>\
+              <label><input type="checkbox" data-mini-layer="rede"> Rede viária</label>\
               <label><input type="checkbox" data-mini-layer="edif" checked> Edifícios</label>\
               <label><input type="checkbox" data-mini-layer="ar" checked> Abrigos/Refúgios</label>\
+              <label><input type="checkbox" data-mini-layer="declive"> Declive</label>\
+              <label><input type="checkbox" data-mini-layer="perigosidade"> Perigosidade</label>\
+              <label><input type="checkbox" data-mini-layer="ardida"> Área Ardida</label>\
             </div>\
             <div class="mini-map" data-lat="'+lat+'" data-lng="'+lng+'"></div>\
+            <div class="mini-legend" data-legend-for="ocup"></div>\
+            <div class="mini-legend" data-legend-for="declive"></div>\
+            <div class="mini-legend" data-legend-for="perigosidade"></div>\
+            <div class="mini-legend" data-legend-for="ardida"></div>\
             <p class="small muted" style="margin:.5rem 0 0;">Mostra camadas dentro do buffer de 250 m. Pode ligar/desligar em cima.</p>\
           </div>\
         </div>\
@@ -1141,15 +1175,45 @@ window.addEventListener('DOMContentLoaded', function(){
     return layerAR;
   });
 
-  // Ocupação do solo (mini-mapas)
+  // Novas camadas
   const pOcup = smartFetchJSON(PATH_OCUP).then(gj => {
     if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
     GJ_OCUP = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
     return GJ_OCUP;
   });
+  const pDeclive = smartFetchJSON(PATH_DECLIVE).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    GJ_DECLIVE = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
+    return GJ_DECLIVE;
+  });
+  const pPerigosidade = smartFetchJSON(PATH_PERIGOSIDADE).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    GJ_PERIGOSIDADE = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
+    return GJ_PERIGOSIDADE;
+  });
+  const pArdida = smartFetchJSON(PATH_ARDIDA).then(gj => {
+    if(!gj) return null; if(looksProjected(gj)) reprojectGeoJSON(gj);
+    GJ_ARDIDA = (gj.type==='FeatureCollection')? gj : {type:'FeatureCollection',features:(gj.features||[])};
+    return GJ_ARDIDA;
+  });
+
+  // Função para criar as legendas dos mini-mapas
+  function createMiniLegend(container, type) {
+    let title = '', items = '';
+    if (type === 'ocup') {
+      title = 'Ocupação do Solo'; items = OCUP_ORDER.map(name => `<div class="legend-item"><i style="background:${OCUP_COLORS[name]}"></i> ${name}</div>`).join('');
+    } else if (type === 'declive') {
+      title = 'Declive'; items = Object.entries(SLP_CLASS_NAME).map(([code, name]) => `<div class="legend-item"><i style="background:${SLP_COLORS[code]}"></i> ${name}</div>`).join('');
+    } else if (type === 'perigosidade') {
+      title = 'Perigosidade'; items = Object.entries(PERI_CLASS_NAME).map(([code, name]) => `<div class="legend-item"><i style="background:${PERI_COLORS[code]}"></i> ${name}</div>`).join('');
+    } else if (type === 'ardida') {
+      title = 'Área Ardida'; items = Object.entries(ARDIDA_CLASS_NAME).map(([code, name]) => `<div class="legend-item"><i style="background:${ARDIDA_COLORS[code]}"></i> ${name}</div>`).join('');
+    }
+    if (title) container.innerHTML = `<details class="mini-legend-details"><summary>Legenda: ${title}</summary><div class="mini-legend-body">${items}</div></details>`;
+  }
   
   // Controlos do mapa principal
-  Promise.all([pF,pA,pRede,pEdif,pAR,pOcup]).then(() => {
+  Promise.all([pF,pA,pRede,pEdif,pAR,pOcup,pDeclive,pPerigosidade,pArdida]).then(() => {
     const overlays = {};
     if(layerFreg) overlays['Freguesias']=layerFreg;
     if(layerAldeias) overlays['Aldeias']=layerAldeias;
@@ -1158,9 +1222,24 @@ window.addEventListener('DOMContentLoaded', function(){
     if(layerAR) overlays['Abrigos/Refúgios']=layerAR;
     L.control.layers(null, overlays, { collapsed:false }).addTo(map);
     if(layerFreg) layerFreg.addTo(map);
+
+    // Legenda principal (estilo 'Explorar')
+    const mainLegend = L.control({position: 'bottomright'});
+    mainLegend.onAdd = function (map) {
+      const div = L.DomUtil.create('div', 'info legend legend-control');
+      div.innerHTML = '<h4>Legenda</h4>' +
+        '<div class="legend-item"><i style="background:#ff6f00"></i> Aldeias</div>' +
+        '<div class="legend-item"><i style="background:#777"></i> Rede Viária</div>' +
+        '<div class="legend-item"><i style="background:#ff69b4"></i> Edifícios</div>' +
+        '<div class="legend-item"><i style="background:#d32f2f"></i> Abrigos/Refúgios</div>';
+      L.DomEvent.disableClickPropagation(div); // Impede que cliques na legenda afetem o mapa
+      return div;
+    };
+    mainLegend.addTo(map);
+
     if(layerAldeias) layerAldeias.addTo(map);
-    if(layerRede) layerRede.addTo(map);
-    if(layerAR) layerAR.addTo(map);
+    // if(layerRede) layerRede.addTo(map); // Desligado por defeito
+    // if(layerAR) layerAR.addTo(map); // Desligado por defeito
     try{ if(layerFreg) map.fitBounds(layerFreg.getBounds(), {padding:[20,20]}); }catch(e){}
     tryRenderMiniLayers();
     checkAdminAndShowControls(); // Verifica se é admin para mostrar os botões
@@ -1200,22 +1279,32 @@ window.addEventListener('DOMContentLoaded', function(){
   // Ligar/desligar camadas do mini-mapa
   document.addEventListener('change', e => {
     const cb = e.target.closest && e.target.closest('input[data-mini-layer]');
-    if(!cb) return;
-    const box = cb.closest('.box'); if(!box) return;
-    const miniEl = box.querySelector('.mini-map'); if(!miniEl) return;
-    const rec = MINI_REG.find(r => r.el===miniEl);
-    if(!rec || !rec.layers) return;
+    if (!cb) return;
+    const box = cb.closest('.box'); if (!box) return;
+    const miniEl = box.querySelector('.mini-map'); if (!miniEl) return;
+    const rec = MINI_REG.find(r => r.el === miniEl);
+    if (!rec || !rec.layers) return;
+    
     const key = cb.getAttribute('data-mini-layer');
     const lyr = rec.layers[key];
-    if(!lyr) return;
-    if(cb.checked){ try{ lyr.addTo(rec.map); }catch(_){} }
-    else{ try{ rec.map.removeLayer(lyr); }catch(_){} }
+    const legendEl = box.querySelector(`.mini-legend[data-legend-for="${key}"]`);
+
+    if (lyr) {
+      if (cb.checked) lyr.addTo(rec.map);
+      else rec.map.removeLayer(lyr);
+    }
+    if (legendEl) {
+      legendEl.style.display = cb.checked ? '' : 'none';
+      if (cb.checked && !legendEl.innerHTML) {
+        createMiniLegend(legendEl, key);
+      }
+    }
   });
 
   // Mini-map drawing (interseção com buffer)
   function tryRenderMiniLayers(){
-    if(!(window.turf)) return;
-    if(!(GJ_REDE||GJ_EDIF||GJ_AR||GJ_OCUP)) return;
+    if (!window.turf) return;
+    if (!(GJ_REDE || GJ_EDIF || GJ_AR || GJ_OCUP || GJ_DECLIVE || GJ_PERIGOSIDADE || GJ_ARDIDA)) return;
 
     function intersectFC(gj,circlePoly){
       if(!gj||!circlePoly) return null;
@@ -1284,10 +1373,40 @@ window.addEventListener('DOMContentLoaded', function(){
         });
       }
 
+      // Adicionar as novas camadas
+      if(GJ_OCUP){
+        const fco = intersectFC(GJ_OCUP, circlePoly);
+        if(fco && fco.features.length) rec.layers.ocup = L.geoJSON(fco, { style:feat => ({ stroke:false, fillColor: OCUP_COLORS[String((feat.properties||{})[KEY_OCUP])] || '#ccc', fillOpacity:.5 }) });
+      }
+      if(GJ_DECLIVE){
+        const fcd = intersectFC(GJ_DECLIVE, circlePoly);
+        if(fcd && fcd.features.length) rec.layers.declive = L.geoJSON(fcd, { style:feat => ({ stroke:false, fillColor: SLP_COLORS[String((feat.properties||{})[KEY_DECLIVE])] || '#ccc', fillOpacity:.5 }) });
+      }
+      if(GJ_PERIGOSIDADE){
+        const fcp = intersectFC(GJ_PERIGOSIDADE, circlePoly);
+        if(fcp && fcp.features.length) rec.layers.perigosidade = L.geoJSON(fcp, { style:feat => ({ stroke:false, fillColor: PERI_COLORS[String((feat.properties||{})[KEY_PERIGOSIDADE])] || '#ccc', fillOpacity:.5 }) });
+      } 
+      if(GJ_ARDIDA){
+        const fca = intersectFC(GJ_ARDIDA, circlePoly);
+        if(fca && fca.features.length) rec.layers.ardida = L.geoJSON(fca, { style: { stroke:false, fillColor: '#730000', fillOpacity:.5 } });
+      }
+
       const box = rec.el.closest('.box') || document;
-      ['ocup','rede','edif','ar'].forEach(k => {
+      ['ocup','rede','edif','ar','declive','perigosidade','ardida'].forEach(k => {
         const cb = box.querySelector('input[data-mini-layer="'+k+'"]');
-        if(cb && cb.checked && rec.layers[k]) rec.layers[k].addTo(mm);
+        if(cb && cb.checked && rec.layers[k]) {
+          rec.layers[k].addTo(mm);
+          // Criar a legenda se estiver ativa
+          const legendEl = box.querySelector(`.mini-legend[data-legend-for="${k}"]`);
+          if (legendEl) {
+            legendEl.style.display = '';
+            createMiniLegend(legendEl, k);
+          }
+        } else {
+          // Esconder a legenda se não estiver ativa
+          const legendEl = box.querySelector(`.mini-legend[data-legend-for="${k}"]`);
+          if (legendEl) legendEl.style.display = 'none';
+        }
       });
 
       rec._drawn=true;
